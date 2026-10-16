@@ -20,8 +20,8 @@ import {
 import { NEW_POLLS_IN } from "~/shared/lib/copy";
 import { type ClockParts, formatClock } from "~/shared/lib/dateUtils";
 import { plural } from "~/shared/lib/displayValue";
-import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
+import type { ClimberProps } from "~/modules/run/community/presentation/Climber.ui";
+import type { RunReadoutProps } from "~/modules/run/run/presentation/RunReadout.ui";
 
 const DIVIDER = " · ";
 const PERCENT = "%";

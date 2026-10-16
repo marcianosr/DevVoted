@@ -2,9 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
-
-import type { KantoColor } from "./colors";
+import type { GateTheme, KantoColor } from "./colors";
 import { usePageTheme } from "./usePageTheme.hook";
 
 const SCREEN =
@@ -34,9 +32,7 @@ export type ScreenProps = {
 	ground?: ScreenGround;
 	floor?: string;
 	enter?: ScreenEnter;
-} & (
-	{ theme: KantoColor; gate?: never } | { gate: SwatchTheme; theme?: never }
-);
+} & ({ theme: KantoColor; gate?: never } | { gate: GateTheme; theme?: never });
 
 export const Screen = ({
 	width = "default",

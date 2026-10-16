@@ -1,0 +1,89 @@
+@utility bg-hatched-theme {
+	background-image: repeating-linear-gradient(
+		135deg,
+		transparent 0 12px,
+		oklch(
+				from var(--theme-color) 0.16
+					max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+			)
+			12px 24px
+	);
+}
+@utility bg-hatched-theme-fine {
+	background-image: repeating-linear-gradient(
+		135deg,
+		transparent 0 3px,
+		oklch(
+				from var(--theme-color) 0.16
+					max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+			)
+			3px 6px
+	);
+}
+
+.registry-deal > * {
+	animation: flip-in 500ms backwards;
+}
+
+.registry-deal > :nth-child(2) {
+	animation-delay: 90ms;
+}
+
+.registry-deal > :nth-child(3) {
+	animation-delay: 180ms;
+}
+
+.registry-deal > :nth-child(4) {
+	animation-delay: 270ms;
+}
+
+.registry-deal > :nth-child(5) {
+	animation-delay: 360ms;
+}
+
+.registry-deal > :nth-child(6) {
+	animation-delay: 450ms;
+}
+
+.registry-deal > :nth-child(7) {
+	animation-delay: 540ms;
+}
+
+.registry-deal > :nth-child(n + 8) {
+	animation-delay: 630ms;
+}
+
+@keyframes flip-in {
+	from {
+		opacity: 0;
+		transform: rotateY(80deg) translateY(10px);
+	}
+}
+
+.weight-track > li {
+	transition: flex-grow 400ms ease;
+}
+
+.weight-fill-new {
+	transform-origin: left;
+	animation: slot-in 500ms ease-out;
+}
+
+@keyframes slot-in {
+	from {
+		transform: scaleX(0);
+		filter: brightness(3);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.config-fold,
+	.weight-track > li {
+		transition: none;
+	}
+
+	.registry-deal > *,
+	.weight-fill-new {
+		animation: none;
+	}
+}

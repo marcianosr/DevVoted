@@ -12,12 +12,12 @@ import {
 	createMockGateStake,
 	createMockRunView,
 } from "~/test/runView.factory";
-import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
 
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { clearGate, started } from "~/modules/run/run/domain/run.factory";
 
 import { GateOutcomeView } from "./GateOutcomeView.component";
+import { COVERAGE_BAND_COLOR } from "~/modules/run/build/application/coverageBand.viewmodel";
 
 const answer = (
 	overrides: Partial<AnsweredPoll> & Pick<AnsweredPoll, "id" | "category">

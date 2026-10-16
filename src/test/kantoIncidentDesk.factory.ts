@@ -3,7 +3,7 @@ import {
 	type IncidentDeal,
 	incidentDeskFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
-import type { IncidentDeskProps } from "~/ui/kanto-theme/IncidentDesk.ui";
+import type { IncidentDeskProps } from "~/modules/run/incident/presentation/IncidentDesk.ui";
 
 const DESK_GATE = 6;
 

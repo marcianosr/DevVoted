@@ -7,7 +7,7 @@ import {
 	type PlayerCardSlotProps,
 } from "~/shared/hooks/usePlayerCardSlot.hook";
 import { profilePathFor } from "~/shared/lib/profilePath";
-import { ClimberCard } from "~/ui/kanto-theme/ClimberCard.ui";
+import { ClimberCard } from "./ClimberCard.ui";
 
 const PlayerCardContent = ({ userId, onClose }: PlayerCardSlotProps) => {
 	const { view } = usePlayerCard(userId);

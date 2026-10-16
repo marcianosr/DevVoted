@@ -4,7 +4,7 @@ import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
-import { SlotBox } from "./SlotBox.ui";
+import { SlotBox } from "~/modules/run/build/presentation/SlotBox.ui";
 import { Typography } from "./Typography.ui";
 
 const meta: Meta<typeof Panel> = {

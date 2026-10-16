@@ -2,12 +2,12 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
-import { Audit } from "./Audit.ui";
-import { ConfigChip } from "./ConfigChip.ui";
+import { Audit } from "~/modules/run/run/presentation/Audit.ui";
+import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { KANTO_COLORS } from "./colors";
 import { Redaction } from "./Redaction.ui";
 import { Screen } from "./Screen.ui";
-import { Swatch } from "./Swatch.ui";
+import { Swatch } from "~/modules/run/gate/presentation/Swatch.ui";
 import { Typography } from "./Typography.ui";
 
 const SAMPLE_GATE = 3;

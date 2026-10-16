@@ -23,7 +23,7 @@ import {
 	runHistory,
 	type RunHistoryRow,
 } from "~/modules/collection/dex/domain/runHistory.model";
-import type { DexConfigRow } from "~/ui/kanto-theme/DexConfigs.ui";
+import type { DexConfigRow } from "~/modules/collection/dex/presentation/DexConfigs.ui";
 
 const poll = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
 	id: 1,

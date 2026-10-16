@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { NEW_RUN_BUILD_NOTE } from "~/modules/run/build/application/newRunScreen.viewmodel";
-import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
+import { leadTextOf } from "~/modules/run/gate/presentation/Lead.ui";
 import { createMockRunView } from "~/test/runView.factory";
 
 import { StartView } from "./StartView.component";

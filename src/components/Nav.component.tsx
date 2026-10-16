@@ -13,8 +13,11 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { POLLS_PATH, SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
 import { isAdminEmail } from "~/shared/utils/adminAuth";
-import { AppNav, type NavViewer } from "~/ui/kanto-theme/AppNav.ui";
-import type { NavRunReading } from "~/ui/kanto-theme/useNavRun.hook";
+import {
+	AppNav,
+	type NavViewer,
+} from "~/modules/app/shell/presentation/AppNav.ui";
+import type { NavRunReading } from "~/modules/app/shell/presentation/useNavRun.hook";
 
 const HOME = "/";
 const SIGN_IN = "/login";

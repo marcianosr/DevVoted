@@ -5,8 +5,8 @@ import {
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { PollScoreRow } from "~/ui/kanto-theme/PollScores.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { PollScoreRow } from "~/modules/run/run/presentation/PollScores.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 
 export const gateRoster: readonly GateSwatch[] = ALL_SWATCHES;
 

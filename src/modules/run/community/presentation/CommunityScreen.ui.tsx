@@ -1,0 +1,373 @@
+import { type ReactNode, useState } from "react";
+
+import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
+import { Button } from "~/ui/kanto-theme/Button.ui";
+import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
+import { ClimberStack, type ClimberProps } from "./Climber.ui";
+import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import {
+	ConfigChip,
+	type ConfigChipProps,
+} from "~/modules/run/config/presentation/ConfigChip.ui";
+import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
+import { Icon, type IconName } from "~/ui/kanto-theme/Icon.ui";
+import {
+	IncidentsPanel,
+	type IncidentsPanelProps,
+} from "~/modules/run/incident/presentation/IncidentsPanel.ui";
+import { Panel } from "~/ui/kanto-theme/Panel.ui";
+import { PollSpotlight, type PollSpotlightProps } from "./PollSpotlight.ui";
+import {
+	Screen,
+	type ScreenGround,
+	type ScreenWidth,
+} from "~/ui/kanto-theme/Screen.ui";
+import { Swatch } from "~/modules/run/gate/presentation/Swatch.ui";
+import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
+import { Typography } from "~/ui/kanto-theme/Typography.ui";
+
+const HEADER = "flex w-full flex-col gap-4 sm:flex-row sm:items-start";
+const CONTROLS =
+	"grid w-full auto-cols-fr grid-flow-col gap-3 sm:ml-auto sm:flex sm:w-auto sm:shrink-0";
+const TITLE_ROW = "flex min-w-0 flex-1 items-start gap-4";
+const NAMING = "flex min-w-0 flex-col gap-2";
+const STATS = "flex flex-wrap items-center gap-2";
+const STAT = "flex items-center gap-1.5 text-theme-muted";
+
+const COLUMNS =
+	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]";
+const COLUMN = "flex w-full min-w-0 flex-col gap-6";
+const ROW_LABEL = "flex min-w-0 flex-col gap-0.5";
+const ROW_CHIP = "flex pt-1";
+
+const SWATCH_SIZE = "hero";
+const CLIMBER_SIZE = "md";
+const ROW_FACES = 3;
+const CROWDED_ROW = "flex-wrap";
+const CROWD =
+	"flex min-w-0 basis-full items-center justify-end gap-2 sm:ml-auto sm:basis-auto";
+const YOUR_SEAT_COLOR: KantoColor = "viridian";
+const CONTROL_SIZE = "md";
+const CONTROL_WIDTH = "full";
+
+export const COPY = {
+	leaders: "Leaders",
+	boards: "which board",
+} as const;
+
+export type CommunityStat = { icon: IconName; label: string; hint: string };
+
+export type CommunityMap = {
+	title: string;
+	track?: ClimbMapProps;
+	empty?: string;
+};
+
+export type CommunityHeader = {
+	swatch: GateSwatch;
+	title: string;
+	subtitle?: string;
+	countdown: string;
+	countdownColor?: KantoColor;
+	countdownHint: string;
+	stats: readonly CommunityStat[];
+	shop?: { label: string; onPress?: () => void };
+	prep: { label: string; onPress?: () => void };
+};
+
+export type TurnoutBand = {
+	label: string;
+	caption?: string;
+	config?: ConfigChipProps;
+	count: string;
+	color?: KantoColor;
+	climbers: readonly ClimberProps[];
+	overflow?: number;
+	shown?: number;
+};
+
+export type CommunityTurnout = {
+	title: string;
+	bands: readonly TurnoutBand[];
+};
+
+export type CommunityRecords = {
+	title: string;
+	rows: readonly TurnoutBand[];
+};
+
+export type CommunityLeaders = {
+	title: string;
+	summary?: string;
+	seats: readonly CategoryLeaderProps[];
+};
+
+export type CommunityPolls = PollSpotlightProps;
+
+export type CommunityScreenProps = {
+	header: CommunityHeader;
+	turnout: CommunityTurnout;
+	records: CommunityRecords;
+	map: CommunityMap;
+	incidents?: IncidentsPanelProps;
+	hallOfFame?: HallOfFameProps;
+	leaders: readonly CommunityLeaders[];
+	polls: CommunityPolls;
+	advertisement?: ReactNode;
+	width?: ScreenWidth;
+	ground?: ScreenGround;
+};
+
+const Stat = ({
+	icon,
+	label,
+	hint,
+	color,
+}: CommunityStat & { color?: KantoColor }) => (
+	<span className={STAT}>
+		<span role="img" aria-label={hint}>
+			<Icon name={icon} />
+		</span>
+		<Badge color={color}>{label}</Badge>
+	</span>
+);
+
+const CommunityHeading = ({
+	swatch,
+	title,
+	subtitle,
+	countdown,
+	countdownColor,
+	countdownHint,
+	stats,
+	shop,
+	prep,
+}: CommunityHeader) => (
+	<header className={HEADER}>
+		<div className={TITLE_ROW}>
+			<Swatch state="discovered" swatch={swatch} size={SWATCH_SIZE} />
+			<span className={NAMING}>
+				<Typography variant="headline" as="h1">
+					{title}
+				</Typography>
+				{subtitle === undefined ? null : (
+					<Typography variant="hint" as="span">
+						{subtitle}
+					</Typography>
+				)}
+				<span className={STATS}>
+					<Stat
+						icon="clock"
+						label={countdown}
+						hint={countdownHint}
+						color={countdownColor}
+					/>
+					{stats.map((stat) => (
+						<Stat key={stat.hint} {...stat} />
+					))}
+				</span>
+			</span>
+		</div>
+		<span className={CONTROLS}>
+			{shop === undefined ? null : (
+				<Button
+					size={CONTROL_SIZE}
+					width={CONTROL_WIDTH}
+					icon="shop"
+					label={shop.label}
+					disabled={shop.onPress === undefined}
+					onPress={shop.onPress}
+				/>
+			)}
+			<Button
+				size={CONTROL_SIZE}
+				width={CONTROL_WIDTH}
+				tone="action"
+				label={prep.label}
+				disabled={prep.onPress === undefined}
+				onPress={prep.onPress}
+			/>
+		</span>
+	</header>
+);
+
+const TurnoutFigures = ({
+	band,
+	wrap = false,
+}: {
+	band: TurnoutBand;
+	wrap?: boolean;
+}) => (
+	<>
+		<Badge color={band.color}>{band.count}</Badge>
+		<ClimberStack
+			climbers={band.climbers}
+			overflow={band.overflow}
+			shown={band.shown ?? ROW_FACES}
+			size={CLIMBER_SIZE}
+			wrap={wrap}
+		/>
+	</>
+);
+
+const TurnoutLabel = ({
+	band,
+	label,
+}: {
+	band: TurnoutBand;
+	label: ReactNode;
+}) => (
+	<span className={ROW_LABEL}>
+		{label}
+		{band.caption === undefined ? null : (
+			<Typography variant="hint" as="span">
+				{band.caption}
+			</Typography>
+		)}
+		{band.config === undefined ? null : (
+			<span className={ROW_CHIP}>
+				<ConfigChip {...band.config} compact />
+			</span>
+		)}
+	</span>
+);
+
+const TurnoutRow = ({
+	band,
+	label,
+}: {
+	band: TurnoutBand;
+	label: ReactNode;
+}) =>
+	band.shown === undefined ? (
+		<Panel.Row trailing={<TurnoutFigures band={band} />}>
+			<TurnoutLabel band={band} label={label} />
+		</Panel.Row>
+	) : (
+		<Panel.Row className={CROWDED_ROW}>
+			<TurnoutLabel band={band} label={label} />
+			<span className={CROWD}>
+				<TurnoutFigures band={band} wrap />
+			</span>
+		</Panel.Row>
+	);
+
+const TurnoutPanel = ({
+	title,
+	rows,
+}: {
+	title: string;
+	rows: readonly TurnoutBand[];
+}) => (
+	<Panel>
+		<Panel.Header label={title} />
+		<Panel.Rows>
+			{rows.map((band) => (
+				<TurnoutRow
+					key={band.label}
+					band={band}
+					label={
+						band.color === undefined ? (
+							<Typography variant="subtitle" as="span">
+								{band.label}
+							</Typography>
+						) : (
+							<Badge color={band.color}>{band.label}</Badge>
+						)
+					}
+				/>
+			))}
+		</Panel.Rows>
+	</Panel>
+);
+
+const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
+	<Panel>
+		<Panel.Header label={title} />
+		<Panel.Body>
+			{track === undefined ? (
+				<Typography variant="hint" as="span">
+					{empty}
+				</Typography>
+			) : (
+				<ClimbMap {...track} />
+			)}
+		</Panel.Body>
+	</Panel>
+);
+
+const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
+	const [showing, setShowing] = useState<string | undefined>(undefined);
+	const board = boards.find(({ title }) => title === showing) ?? boards[0];
+
+	if (board === undefined) return null;
+
+	return (
+		<Panel>
+			<Panel.Header
+				label={COPY.leaders}
+				summary={board.summary}
+				trailing={
+					boards.length < 2 ? undefined : (
+						<Segmented
+							label={COPY.boards}
+							items={boards.map(({ title }) => ({
+								value: title,
+								label: title,
+							}))}
+							value={board.title}
+							onSelect={setShowing}
+						/>
+					)
+				}
+			/>
+			{board.seats.length === 0 ? null : (
+				<Panel.Rows>
+					{board.seats.map((seat) => (
+						<Panel.Row
+							key={seat.category}
+							theme={seat.leader?.you === true ? YOUR_SEAT_COLOR : undefined}
+						>
+							<CategoryLeader {...seat} />
+						</Panel.Row>
+					))}
+				</Panel.Rows>
+			)}
+		</Panel>
+	);
+};
+
+export const CommunityScreen = ({
+	header,
+	turnout,
+	records,
+	map,
+	incidents,
+	hallOfFame,
+	leaders,
+	polls,
+	advertisement,
+	width = "wide",
+	ground = "bare",
+}: CommunityScreenProps) => (
+	<Screen gate={header.swatch.theme} width={width} ground={ground} enter="rise">
+		<CommunityHeading {...header} />
+		<WhereEveryoneIs {...map} />
+		<div className={COLUMNS}>
+			<div className={COLUMN}>
+				<PollSpotlight {...polls} />
+				{advertisement}
+			</div>
+			<div className={COLUMN}>
+				{hallOfFame === undefined ? null : <HallOfFame {...hallOfFame} />}
+				<TurnoutPanel title={turnout.title} rows={turnout.bands} />
+				<TurnoutPanel {...records} />
+				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
+				<LeaderBoards boards={leaders} />
+			</div>
+		</div>
+	</Screen>
+);

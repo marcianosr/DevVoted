@@ -1,4 +1,4 @@
-import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
+import type { ConfigChipBadge } from "~/modules/run/config/presentation/ConfigChip.ui";
 
 const LOCK_IN = "lock in";
 const LOCKED_IN = "locked in";

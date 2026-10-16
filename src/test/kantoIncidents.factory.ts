@@ -7,7 +7,7 @@ import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import { auditsPanelFor } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { IncidentSender } from "~/modules/run/run/domain/run.model";
-import type { AuditsPanelProps } from "~/ui/kanto-theme/AuditsPanel.ui";
+import type { AuditsPanelProps } from "~/modules/run/run/presentation/AuditsPanel.ui";
 import {
 	attackOfferViewFor,
 	INCIDENTS_EMPTY,
@@ -15,7 +15,7 @@ import {
 	incidentFeedRowFor,
 	incidentsPanelFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
-import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
+import type { IncidentsPanelProps } from "~/modules/run/incident/presentation/IncidentsPanel.ui";
 
 export { INCIDENTS_EMPTY, INCIDENTS_TITLE };
 

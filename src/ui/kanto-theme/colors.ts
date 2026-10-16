@@ -14,3 +14,5 @@ export const KANTO_COLORS = [
 ] as const;
 
 export type KantoColor = (typeof KANTO_COLORS)[number];
+
+export type GateTheme = `gate-${string}`;

@@ -17,19 +17,19 @@ import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { CodeSpans } from "~/ui/kanto-theme/CodeText.ui";
-import { Keycap } from "~/ui/kanto-theme/Keycap.ui";
+import { Keycap } from "~/modules/run/run/presentation/Keycap.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Link } from "~/ui/kanto-theme/Link.ui";
 import {
 	Question,
 	questionFactsOf,
 	type QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
+} from "~/modules/run/run/presentation/Question.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import {
 	ScreenActions,
 	type FooterAction,
-} from "~/ui/kanto-theme/ScreenFooter.ui";
+} from "~/modules/run/run/presentation/ScreenFooter.ui";
 import { Segmented, type SegmentedItem } from "~/ui/kanto-theme/Segmented.ui";
 import { Select, type SelectOption } from "~/ui/kanto-theme/Select.ui";
 import { TextArea } from "~/ui/kanto-theme/TextArea.ui";

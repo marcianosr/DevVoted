@@ -24,11 +24,14 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { hasUpgradeLeft } from "~/modules/run/config/domain/autoUpgrade.model";
-import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { ConfigFactsProps } from "~/ui/kanto-theme/ConfigFacts.ui";
-import type { BuildGrowth } from "~/ui/kanto-theme/InstallScale.ui";
-import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
-import type { VersionState } from "~/ui/kanto-theme/Version.ui";
+import type { ConfigChipBadge } from "~/modules/run/config/presentation/ConfigChip.ui";
+import type { ConfigFactsProps } from "~/modules/run/config/presentation/ConfigFacts.ui";
+import type { BuildGrowth } from "~/modules/run/config/presentation/InstallScale.ui";
+import type {
+	UpgradeRung,
+	UpgradesProps,
+} from "~/modules/run/config/presentation/Upgrades.ui";
+import type { VersionState } from "~/modules/run/config/presentation/Version.ui";
 
 const FIRST_VERSION = 1;
 

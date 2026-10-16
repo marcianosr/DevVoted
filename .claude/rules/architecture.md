@@ -8,8 +8,8 @@ paths:
 # Module Architecture
 
 New code lives under `src/modules/{context}/{aggregate}/{layer}`, where layer is one
-of `domain/`, `application/`, `infrastructure/`, `presentation/`. Contexts are `run`,
-`polls`, `collection`, `account`.
+of `domain/`, `application/`, `infrastructure/`, `presentation/`. The contexts and their
+aggregates are listed in [ADR-002](../../docs/adr/002-domain-architecture.md#devvoteds-contexts-and-aggregates).
 
 **Before creating any file under `src/modules/`, walk the decision tree in
 [ADR-002 §5](../../docs/adr/002-domain-architecture.md#5-decision-tree-where-does-my-file-go).**

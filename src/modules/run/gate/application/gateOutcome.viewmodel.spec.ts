@@ -16,7 +16,7 @@ import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
-import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
+import type { VerdictOutcome } from "~/modules/run/run/presentation/Verdict.ui";
 import { createMockGateClose, createMockRunView } from "~/test/runView.factory";
 
 const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };

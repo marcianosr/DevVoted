@@ -19,13 +19,13 @@ import {
 import { MAX_PAIRS, MIN_PAIRS, PAIR_SIZE } from "~/shared/lib/answerTypes";
 import { letterAt } from "~/shared/lib/letters";
 import { signedKbLabel } from "~/shared/lib/storage";
-import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
+import type { ChoiceState } from "~/modules/run/run/presentation/Choice.ui";
 import type {
 	QuestionOption,
 	QuestionPairs,
 	QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
-import type { PairTile } from "~/ui/kanto-theme/MatchingPairs.ui";
+} from "~/modules/run/run/presentation/Question.ui";
+import type { PairTile } from "~/modules/run/run/presentation/MatchingPairs.ui";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
 const COPY = {

@@ -12,7 +12,7 @@ import {
 	type ShopScreenHandlers,
 	shopScreenPropsFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
-import { ShopScreen } from "~/ui/kanto-theme/ShopScreen.ui";
+import { ShopScreen } from "./ShopScreen.ui";
 
 export type ShopViewProps = ShopScreenHandlers & {
 	view: RunView;

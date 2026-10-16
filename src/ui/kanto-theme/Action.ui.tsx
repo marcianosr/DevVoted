@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import type { KantoColor } from "./colors";
 import { Icon, type IconName } from "./Icon.ui";
-import { Swatch, type SwatchMark, type SwatchSize } from "./Swatch.ui";
 
 const PRESS =
 	"flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition disabled:cursor-not-allowed";
@@ -19,8 +20,6 @@ const LEADS_ON = "ml-auto size-4";
 const LEADS_ON_ICON: IconName = "forward";
 const MARK = "size-7";
 const DASHED = "size-7 shrink-0 rounded-md border border-dashed border-current";
-
-const MARK_SIZE: SwatchSize = "large";
 
 const SEPARATOR = " · ";
 
@@ -41,7 +40,7 @@ const toneColorOf = (
 export type ActionProps = {
 	label: string;
 	note?: string;
-	swatch?: SwatchMark;
+	leading?: ReactNode;
 	icon?: IconName;
 	mark?: ActionMark;
 	tone?: ActionTone;
@@ -49,30 +48,20 @@ export type ActionProps = {
 	onPress?: () => void;
 };
 
-const Mark = ({ swatch, icon, mark, refused }: MarkProps) => {
-	if (swatch !== undefined)
-		return (
-			<Swatch
-				{...swatch}
-				size={MARK_SIZE}
-				ground={refused ? "dark" : "bright"}
-			/>
-		);
-
+const Mark = ({ leading, icon, mark }: MarkProps) => {
+	if (leading !== undefined) return leading;
 	if (icon !== undefined) return <Icon name={icon} className={MARK} />;
 	if (mark !== undefined) return <span aria-hidden className={DASHED} />;
 
 	return null;
 };
 
-type MarkProps = Pick<ActionProps, "swatch" | "icon" | "mark"> & {
-	refused: boolean;
-};
+type MarkProps = Pick<ActionProps, "leading" | "icon" | "mark">;
 
 export const Action = ({
 	label,
 	note,
-	swatch,
+	leading,
 	icon,
 	mark,
 	tone = "action",
@@ -94,7 +83,7 @@ export const Action = ({
 				shine && !refused && SHINE
 			)}
 		>
-			<Mark swatch={swatch} icon={icon} mark={mark} refused={refused} />
+			<Mark leading={leading} icon={icon} mark={mark} />
 			<span className={LINES}>
 				<span className={LABEL}>{label}</span>
 				{note === undefined ? null : <span className={NOTE}>{note}</span>}

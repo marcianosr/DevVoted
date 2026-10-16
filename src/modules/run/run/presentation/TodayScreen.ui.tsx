@@ -15,21 +15,21 @@ import type {
 	TodayShop,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { Action } from "~/ui/kanto-theme/Action.ui";
-import { Audit } from "~/ui/kanto-theme/Audit.ui";
+import { Audit } from "./Audit.ui";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
-import { ClimberStack } from "~/ui/kanto-theme/Climber.ui";
-import { ConfigChip } from "~/ui/kanto-theme/ConfigChip.ui";
-import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
+import { ClimberStack } from "~/modules/run/community/presentation/Climber.ui";
+import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { Fold } from "~/ui/kanto-theme/Fold.ui";
 import { Icon } from "~/ui/kanto-theme/Icon.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { RunReadout } from "~/ui/kanto-theme/RunReadout.ui";
+import { RunReadout } from "./RunReadout.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
-import { Swatch } from "~/ui/kanto-theme/Swatch.ui";
+import { PressSwatch, Swatch } from "~/modules/run/gate/presentation/Swatch.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
-import { Weight } from "~/ui/kanto-theme/Weight.ui";
-import { WeightTrack } from "~/ui/kanto-theme/WeightTrack.ui";
+import { Weight } from "~/modules/run/build/presentation/Weight.ui";
+import { WeightTrack } from "~/modules/run/build/presentation/WeightTrack.ui";
+import { COVERAGE_BAND_COLOR } from "~/modules/run/build/application/coverageBand.viewmodel";
 
 export const COPY = {
 	runSoFar: "Run so far",
@@ -169,7 +169,12 @@ const Press = ({
 		<Action
 			label={label}
 			note={note}
-			swatch={{ state: "current", swatch, count: pollsLeft }}
+			leading={
+				<PressSwatch
+					mark={{ state: "current", swatch, count: pollsLeft }}
+					refused={onPress === undefined}
+				/>
+			}
 			onPress={onPress}
 		/>
 	);

@@ -1,12 +1,12 @@
 import { render } from "@testing-library/react";
 import { useState, type ReactElement, type ReactNode } from "react";
 
-import { Balance } from "~/ui/kanto-theme/Balance.ui";
-import { SwatchTrack } from "~/ui/kanto-theme/SwatchTrack.ui";
+import { Balance } from "~/modules/run/run/presentation/Balance.ui";
+import { SwatchTrack } from "~/modules/run/gate/presentation/SwatchTrack.ui";
 import {
 	NavRunContext,
 	type NavRunReading,
-} from "~/ui/kanto-theme/useNavRun.hook";
+} from "~/modules/app/shell/presentation/useNavRun.hook";
 
 const NAV_TEST_ID = "nav-run";
 
