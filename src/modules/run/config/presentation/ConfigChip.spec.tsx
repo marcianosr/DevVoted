@@ -1740,6 +1740,11 @@ describe("ConfigChip's armed upgrade", () => {
 		onToggleUpgrades = vi.fn(),
 		upgrades = UPGRADES,
 		infoOpen = true,
+	}: {
+		onBuy?: () => void;
+		onToggleUpgrades?: () => void;
+		upgrades?: UpgradesProps;
+		infoOpen?: boolean;
 	} = {}) =>
 		render(
 			<ConfigChip
@@ -1815,6 +1820,31 @@ describe("ConfigChip's armed upgrade", () => {
 		expect(
 			screen.getByRole("button", { name: /^Confirm upgrading Cache/ })
 		).toBeDisabled();
+	});
+
+	it("names what a coverage-locked upgrade needs on its confirm press, not its price", () => {
+		armedCard({ upgrades: { ...REFUSED, lock: "needs 5% JavaScript" } });
+
+		const press = screen.getByRole("button", {
+			name: /^Confirm upgrading Cache/,
+		});
+		expect(press).toHaveTextContent("needs 5% JavaScript");
+		expect(press).not.toHaveTextContent("64 KB");
+		expect(press).toBeDisabled();
+	});
+
+	it("names what a coverage-locked upgrade needs on the chip's upgrade press", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				upgrades={{ ...REFUSED, lock: "needs 5% JavaScript" }}
+			/>
+		);
+
+		const press = screen.getByRole("button", { name: /upgrad/i });
+		expect(press).toHaveTextContent("needs 5% JavaScript");
+		expect(press).not.toHaveTextContent("64 KB");
 	});
 });
 

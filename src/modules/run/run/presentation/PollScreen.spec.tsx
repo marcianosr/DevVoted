@@ -780,6 +780,46 @@ describe("PollScreen while an answer lands", () => {
 		Reflect.deleteProperty(HTMLElement.prototype, "animate");
 	});
 
+	it("rises and fades beside the answer when the bar is out of view, landing once", () => {
+		const onFlightLanded = vi.fn();
+		const onFlightSettled = vi.fn();
+		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };
+		const animate = vi.fn(() => animation);
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			value: animate,
+			configurable: true,
+		});
+		const belowTheFold = vi
+			.spyOn(HTMLElement.prototype, "getBoundingClientRect")
+			.mockReturnValue(
+				DOMRect.fromRect({ x: 0, y: 2000, width: 100, height: 8 })
+			);
+
+		render(
+			<PollScreen
+				{...props}
+				question={rightAnswer}
+				flight={{ figure: "+12%", id: "poll-1", fromHeld: 24, toHeld: 36 }}
+				onFlightLanded={onFlightLanded}
+				onFlightSettled={onFlightSettled}
+			/>
+		);
+
+		expect(animate).toHaveBeenCalledOnce();
+		expect(animate).toHaveBeenLastCalledWith(expect.any(Array), {
+			duration: 1020,
+		});
+
+		act(() => animation.onfinish?.());
+
+		expect(animate).toHaveBeenCalledOnce();
+		expect(onFlightLanded).toHaveBeenCalledTimes(1);
+		expect(onFlightSettled).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText("+12%")).toBeNull();
+		belowTheFold.mockRestore();
+		Reflect.deleteProperty(HTMLElement.prototype, "animate");
+	});
+
 	it("reports the chip settled only once it has ridden to the new fill", () => {
 		const onFlightSettled = vi.fn();
 		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };

@@ -415,9 +415,10 @@ only.
 
 **How an answer lands** (ADR-170). A right answer lights its option green, pulses the
 **accuracy bar** under the coverage bar, and flies its gain (`+20%` at Pallet) into the
-bar, which moves when it lands. A wrong answer turns its option cinnabar, marks the right
-one, and shakes the card. Each answered option rings and glows once in its verdict colour and
-its ✓ or ✗ pops in. The poll then waits for **Next** (or Enter; ADR-197). On
+bar, which moves when it lands. When the bar is out of view (on a phone it sits under
+the card), the gain rises and fades beside the answer instead. A wrong answer turns its
+option cinnabar, marks the right one, and shakes the card. Each answered option rings
+and glows once in its verdict colour and its ✓ or ✗ pops in. The poll then waits for **Next** (or Enter; ADR-197). On
 Next, once any flying gain chip has ridden into the bar (at most 3s), the card slides
 away left in 180ms, the next poll slides in from the right and deals its options in one by one, and
 two or more right answers in a row in the gate pop **2 in a row!** over the card
@@ -922,6 +923,8 @@ in one shop** — only what you can pay for and what the coverage gate allows.
   coverage in that category **and** the storage. Coverage is permission, KB is the
   price, and neither substitutes for the other, so an earned level can be unaffordable
   and a funded one unearned. Each version raises the payout (`1 + 0.25 × version`).
+  While coverage locks it, the upgrade press names what it needs (**needs 15%
+  JavaScript**) in place of its price.
 - **Build Artifacts** buys +32 KB payout per version on clear. Storage only, no coverage gate.
 - **Moore's Law** buys +2% interest per version, up to 10% at v5, spending the very
   principal the interest then earns against.

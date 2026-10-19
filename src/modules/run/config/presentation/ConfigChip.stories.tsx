@@ -347,6 +347,26 @@ export const UpgradeUnaffordable: Story = {
 	),
 };
 
+export const UpgradeLockedBehindCoverage: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion" width="narrow">
+			<WithPanels
+				name=".js"
+				slots={1}
+				version={3}
+				badges={[{ label: "×1.25", color: "viridian" }]}
+				info={infoFor({ ...CONFIGS.js, level: 3 })}
+				upgrades={upgradesFor(
+					{ ...CONFIGS.js, level: 3 },
+					{ storageKb: 844, coveragePct: 9 }
+				)}
+				onUninstall={noop}
+			/>
+		</Screen>
+	),
+};
+
 export const WithUninstall: Story = {
 	args: { slots: 2, onUninstall: noop },
 };

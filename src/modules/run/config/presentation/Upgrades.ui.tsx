@@ -77,6 +77,7 @@ export type UpgradesProps = {
 	changes?: readonly UpgradeChange[];
 	scale?: BuildGrowth;
 	refusal?: string;
+	lock?: string;
 	onBuy?: (version: number) => void;
 	onClose?: () => void;
 };
