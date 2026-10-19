@@ -244,6 +244,18 @@ describe("upgradesFor — the Build panel's own press", () => {
 		);
 	});
 
+	it("labels the press of an upgrade locked behind coverage with what it needs", () => {
+		const panel = upgradesFor(CONFIGS.js, { storageKb: 512, coveragePct: 2 });
+
+		expect(panel.lock).toBe("needs 5% JavaScript");
+	});
+
+	it("puts no lock on an upgrade only the balance holds back", () => {
+		const panel = upgradesFor(CONFIGS.mooresLaw, { ...RICH, storageKb: 32 });
+
+		expect(panel.lock).toBeUndefined();
+	});
+
 	it("waives the coverage gate for a config that has no focus category", () => {
 		expect(
 			upgradesFor(CONFIGS.mooresLaw, { ...RICH, coveragePct: 0 }).refusal

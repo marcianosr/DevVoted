@@ -922,6 +922,8 @@ in one shop** — only what you can pay for and what the coverage gate allows.
   coverage in that category **and** the storage. Coverage is permission, KB is the
   price, and neither substitutes for the other, so an earned level can be unaffordable
   and a funded one unearned. Each version raises the payout (`1 + 0.25 × version`).
+  While coverage locks it, the upgrade press names what it needs (**needs 15%
+  JavaScript**) in place of its price.
 - **Build Artifacts** buys +32 KB payout per version on clear. Storage only, no coverage gate.
 - **Moore's Law** buys +2% interest per version, up to 10% at v5, spending the very
   principal the interest then earns against.

@@ -101,11 +101,34 @@ const PERCENT = "%";
 const UNLOCKS_AT = "Unlocks at";
 const COVERAGE_WORD = "coverage, you have";
 const SHORT_TRAIL = "short";
+const NEEDS = "needs";
 
 export type BuildUpgradeDeal = {
 	storageKb: number;
 	coveragePct: number;
 	onBuy?: () => void;
+};
+
+const isCoverageLocked = (
+	config: Config,
+	held: number,
+	coveragePct: number
+): boolean =>
+	config.focusCategory !== undefined &&
+	coveragePct < upgradeCoverageRequired(held);
+
+export const upgradeLockOf = (
+	config: Config,
+	held: number,
+	{ coveragePct }: BuildUpgradeDeal
+): string | undefined => {
+	if (
+		config.focusCategory === undefined ||
+		!isCoverageLocked(config, held, coveragePct)
+	)
+		return undefined;
+	const category = getCategoryMetadata(config.focusCategory).name;
+	return `${NEEDS} ${upgradeCoverageRequired(held)}${PERCENT} ${category}`;
 };
 
 export const upgradeRefusalOf = (
@@ -136,6 +159,10 @@ export const upgradesFor = (
 		deal === undefined || held >= max
 			? undefined
 			: upgradeRefusalOf(config, held, deal);
+	const lock =
+		deal === undefined || held >= max
+			? undefined
+			: upgradeLockOf(config, held, deal);
 
 	const rungs: UpgradeRung[] = Array.from({ length: max }, (_, index) => {
 		const version = index + 1;
@@ -157,6 +184,7 @@ export const upgradesFor = (
 		rungs,
 		changes: held >= max ? [] : upgradePreview(config),
 		...(refusal === undefined ? {} : { refusal }),
+		...(lock === undefined ? {} : { lock }),
 		...(onBuy === undefined ? {} : { onBuy: () => onBuy() }),
 	};
 };

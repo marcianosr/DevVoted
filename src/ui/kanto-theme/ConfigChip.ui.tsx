@@ -547,15 +547,16 @@ export const ConfigChip = (props: ConfigChipProps) => {
 			/>
 		);
 
+	const upgradeDetail = upgrades?.lock ?? offered?.price;
 	const upgradePress = (row: boolean) =>
 		offered === undefined ? null : row ? (
 			<Button
 				tone={ROW_UPGRADE_TONE}
 				size={ROW_SIZE}
 				label={
-					offered.price === undefined
+					upgradeDetail === undefined
 						? `${UPGRADE_GLYPH} v${offered.version}`
-						: `${UPGRADE_GLYPH} v${offered.version}${HINT_SEPARATOR}${offered.price}`
+						: `${UPGRADE_GLYPH} v${offered.version}${HINT_SEPARATOR}${upgradeDetail}`
 				}
 				hint={upgradeHintOf(name, offered)}
 				expanded={upgradesOpen}
@@ -567,7 +568,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 				tone={UPGRADE_TONE}
 				cap={UPGRADE_GLYPH}
 				label={`v${offered.version}`}
-				detail={offered.price}
+				detail={upgradeDetail}
 				detailOn={priceOn}
 				hint={upgradeHintOf(name, offered)}
 				expanded={upgradesOpen}
@@ -592,9 +593,10 @@ export const ConfigChip = (props: ConfigChipProps) => {
 						tone={ROW_UPGRADE_TONE}
 						size={ROW_SIZE}
 						label={
-							offered.price === undefined
+							upgrades.lock ??
+							(offered.price === undefined
 								? COPY.upgrade
-								: `${COPY.upgrade}${HINT_SEPARATOR}${offered.price}`
+								: `${COPY.upgrade}${HINT_SEPARATOR}${offered.price}`)
 						}
 						hint={confirmUpgradeHintOf(name, offered)}
 						disabled={offered.disabled === true || upgrades.onBuy === undefined}

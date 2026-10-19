@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **A locked upgrade says what it needs.** A file-type config like `.js` only upgrades once you hold enough coverage in its category, but its upgrade press showed just the price, so plenty of KB still met a greyed-out button. While coverage locks it, the press now reads what it needs, like **needs 15% JavaScript**.
 
 ## 2.6.3 - 2026-10-15
 ### Changed
