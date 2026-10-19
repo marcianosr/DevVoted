@@ -71,6 +71,8 @@ const FLY_EASING = "cubic-bezier(.4,.1,.2,1)";
 const RIDE_MS = 550;
 const RIDE_EASING = "cubic-bezier(0.3, 0.7, 0.2, 1)";
 const FADE_MS = 200;
+const RISE_MS = 400;
+const RISE_PX = 40;
 const POP_SCALE = 0.6;
 const CHIP_GAP = 12;
 const FLIGHT_COLOR: KantoColor = "viridian";
@@ -237,6 +239,7 @@ const POP_TIMING = {
 	fill: "forwards",
 } as const;
 const RIDE_TIMING = { duration: RIDE_MS + FADE_MS } as const;
+const RISE_TIMING = { duration: POP_MS + HOLD_MS + RISE_MS } as const;
 
 const ANSWER_TEXT_INDEX = 1;
 
@@ -279,6 +282,28 @@ const popPathOf = (beside: Point, from: Point) => [
 	},
 	{ offset: 1, transform: chipAt(from, "centre"), opacity: 1 },
 ];
+
+const risePathOf = (beside: Point) => [
+	{ offset: 0, transform: chipAt(beside, "start", POP_SCALE), opacity: 0 },
+	{
+		offset: POP_MS / RISE_TIMING.duration,
+		transform: chipAt(beside, "start"),
+		opacity: 1,
+	},
+	{
+		offset: (POP_MS + HOLD_MS) / RISE_TIMING.duration,
+		transform: chipAt(beside, "start"),
+		opacity: 1,
+	},
+	{
+		offset: 1,
+		transform: chipAt({ ...beside, y: beside.y - RISE_PX }, "start"),
+		opacity: 0,
+	},
+];
+
+const isOnScreen = (rect: DOMRect) =>
+	rect.top < window.innerHeight && rect.bottom >= 0;
 
 const ridePathOf = (from: Point, to: Point) => [
 	{
@@ -339,6 +364,18 @@ const GainFlight = ({
 			settle();
 			landed.current?.();
 			return;
+		}
+
+		if (!isOnScreen(track)) {
+			const rising = node.animate(risePathOf(besideOf(text)), RISE_TIMING);
+			rising.onfinish = () => {
+				landed.current?.();
+				settle();
+			};
+			return () => {
+				rising.onfinish = null;
+				rising.cancel();
+			};
 		}
 
 		const from = fillEdgeOf(track, flight.fromHeld);
