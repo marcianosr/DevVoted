@@ -1,12 +1,11 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Button, type ButtonTone } from "./Button.ui";
+import { allStyles } from "~/test/styles.harness";
 
-const appCss = readFileSync("src/styles/app.css", "utf8");
+const appCss = allStyles();
 
 const TONES = [
 	"ambient",
@@ -324,7 +323,7 @@ describe("Button", () => {
 	});
 
 	it.each(TONES)(
-		"names only utilities app.css declares, at tone %s",
+		"names only utilities the stylesheet declares, at tone %s",
 		(tone) => {
 			render(<Button label="press" glyph="x" tone={tone} onPress={vi.fn()} />);
 

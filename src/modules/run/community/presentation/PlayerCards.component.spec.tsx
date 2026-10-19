@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPlayerCard } from "~/modules/run/community/application/playerCard.serverfn";
 import { PlayerCards } from "~/modules/run/community/presentation/PlayerCards.component";
-import { Climber } from "~/ui/kanto-theme/Climber.ui";
+import { Climber } from "./Climber.ui";
 
 vi.mock("~/modules/run/community/application/playerCard.serverfn", () => ({
 	getPlayerCard: vi.fn(),

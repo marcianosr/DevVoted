@@ -92,11 +92,15 @@ import {
 	percentLabel,
 } from "./wikiFacts.viewmodel";
 import { GLOSSARY_TERMS, type WikiTerm } from "./wikiGlossary.viewmodel";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { LeadBand, LeadPart, LeadSwatch } from "~/ui/kanto-theme/Lead.ui";
-import type { WeightTrackProps } from "~/ui/kanto-theme/WeightTrack.ui";
-import type { StatTile } from "~/ui/kanto-theme/StatTiles.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
+import type {
+	LeadBand,
+	LeadPart,
+	LeadSwatch,
+} from "~/modules/run/gate/presentation/Lead.ui";
+import type { WeightTrackProps } from "~/modules/run/build/presentation/WeightTrack.ui";
+import type { StatTile } from "~/modules/account/profile/presentation/StatTiles.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 
 export type WikiWeightCell = { readonly weight: number };
 

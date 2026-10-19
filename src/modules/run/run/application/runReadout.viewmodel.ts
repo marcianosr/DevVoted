@@ -1,5 +1,5 @@
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
+import type { RunReadoutProps } from "~/modules/run/run/presentation/RunReadout.ui";
 
 export const runReadoutFor = (
 	view: RunView,

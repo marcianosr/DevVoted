@@ -17,7 +17,7 @@ import type {
 import type {
 	IncidentRowProps,
 	IncidentsPanelProps,
-} from "~/ui/kanto-theme/IncidentsPanel.ui";
+} from "~/modules/run/incident/presentation/IncidentsPanel.ui";
 
 export type PayloadView = {
 	readonly auditId: AuditId;

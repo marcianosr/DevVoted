@@ -27,7 +27,7 @@ import {
 import {
 	NavRunContext,
 	type NavRunReading,
-} from "~/ui/kanto-theme/useNavRun.hook";
+} from "~/modules/app/shell/presentation/useNavRun.hook";
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
 

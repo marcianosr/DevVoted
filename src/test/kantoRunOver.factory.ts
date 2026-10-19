@@ -14,8 +14,8 @@ import {
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { CategoryCode } from "~/shared/lib/categories";
-import type { PollScoreRow } from "~/ui/kanto-theme/PollScores.ui";
-import type { RunOverScreenProps } from "~/ui/kanto-theme/RunOverScreen.ui";
+import type { PollScoreRow } from "~/modules/run/run/presentation/PollScores.ui";
+import type { RunOverScreenProps } from "~/modules/run/run/presentation/RunOverScreen.ui";
 
 export { runOverPropsFor, type RunOverFrame };
 

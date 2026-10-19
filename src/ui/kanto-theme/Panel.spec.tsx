@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { Fold } from "./Fold.ui";
 import { Modal } from "./Modal.ui";
 import { Panel } from "./Panel.ui";
+import { allStyles } from "~/test/styles.harness";
 
 const Full = () => (
 	<Panel>
@@ -364,7 +364,7 @@ describe("Panel", () => {
 });
 
 describe("the Champion's panel edge", () => {
-	const appCss = readFileSync("src/styles/app.css", "utf8");
+	const appCss = allStyles();
 
 	it("marks a panel and a fold as the one surface the Champion edge paints", () => {
 		const { container } = render(

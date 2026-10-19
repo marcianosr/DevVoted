@@ -12,12 +12,12 @@ import {
 import { DEFAULT_PROFILE_THEME } from "~/modules/account/profile/domain/profileTheme.model";
 import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
-import {
-	type ClimberCardFile,
-	type ClimberCardLoot,
-	type ClimberCardLooter,
-	type ClimberCardProps,
-} from "~/ui/kanto-theme/ClimberCard.ui";
+import type {
+	ClimberCardFile,
+	ClimberCardLoot,
+	ClimberCardLooter,
+	ClimberCardProps,
+} from "~/modules/run/community/presentation/ClimberCard.ui";
 import {
 	gateOf,
 	trackPosition,

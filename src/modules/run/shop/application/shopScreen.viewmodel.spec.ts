@@ -26,8 +26,8 @@ import {
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { kbLabel } from "~/shared/lib/storage";
 import { kantoIncidentDeal } from "~/test/kantoIncidentDesk.factory";
-import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
-import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
+import type { ConfigChipProps } from "~/modules/run/config/presentation/ConfigChip.ui";
+import { offeredRungOf } from "~/modules/run/config/presentation/Upgrades.ui";
 
 describe("offerChipFor, marking a config met for the first time", () => {
 	const DEAL = { priceKb: 32, affordable: true };

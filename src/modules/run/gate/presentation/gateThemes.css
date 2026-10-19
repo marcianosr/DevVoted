@@ -1,0 +1,145 @@
+[data-swatch-theme="gate-pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-swatch-theme="gate-pewter"] {
+	--theme-color: var(--color-pewter);
+}
+[data-swatch-theme="gate-cerulean"] {
+	--theme-color: var(--color-cerulean);
+}
+[data-swatch-theme="gate-vermilion"] {
+	--theme-color: var(--color-vermillion);
+}
+[data-swatch-theme="gate-celadon"] {
+	--theme-color: var(--color-celadon);
+}
+[data-swatch-theme="gate-fuchsia"] {
+	--theme-color: var(--color-fuchsia);
+}
+[data-swatch-theme="gate-saffron"] {
+	--theme-color: var(--color-saffron);
+}
+[data-swatch-theme="gate-cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-swatch-theme="gate-viridian"] {
+	--theme-color: var(--color-viridian);
+}
+[data-swatch-theme="gate-lavender"] {
+	--theme-color: var(--color-lavender);
+}
+[data-swatch-theme="gate-seafoam"] {
+	--theme-color: var(--color-seafoam);
+}
+[data-swatch-theme="gate-indigo-elite"] {
+	--theme-color: var(--color-indigo);
+}
+[data-gate-theme="gate-pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-gate-theme="gate-pewter"] {
+	--theme-color: var(--color-pewter);
+}
+[data-gate-theme="gate-cerulean"] {
+	--theme-color: var(--color-cerulean);
+	--theme-ground-chroma: 0.12;
+}
+[data-gate-theme="gate-vermilion"] {
+	--theme-color: var(--color-vermillion);
+	--theme-ground-chroma: 0.12;
+}
+[data-gate-theme="gate-celadon"] {
+	--theme-color: var(--color-celadon);
+	--theme-ground-chroma: 0.18;
+}
+[data-gate-theme="gate-fuchsia"] {
+	--theme-color: var(--color-fuchsia);
+	--theme-ground-chroma: 0.18;
+}
+[data-gate-theme="gate-saffron"] {
+	--theme-color: var(--color-saffron);
+}
+[data-gate-theme="gate-cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+	--theme-ground-chroma: 0.12;
+}
+[data-gate-theme="gate-viridian"] {
+	--theme-color: var(--color-viridian);
+	--theme-ground-chroma: 0.18;
+}
+[data-gate-theme="gate-lavender"] {
+	--theme-color: var(--color-lavender);
+	--theme-ground-chroma: 0.18;
+}
+[data-gate-theme="gate-seafoam"] {
+	--theme-color: var(--color-seafoam);
+}
+[data-gate-theme="gate-indigo-elite"] {
+	--theme-color: oklch(from var(--color-indigo) 0.7 c h);
+}
+[data-gate-theme="gate-champion"] {
+	--theme-color: var(--color-fuchsia);
+	--theme-ground-chroma: 0.18;
+}
+[data-gate-theme="gate-champion"] {
+	--champion-prism-stops:
+		oklch(from var(--color-saffron) 0.82 calc(c * 0.7) h),
+		oklch(from var(--color-fuchsia) 0.82 calc(c * 0.7) h),
+		oklch(from var(--color-lavender) 0.82 calc(c * 0.7) h),
+		oklch(from var(--color-cerulean) 0.82 calc(c * 0.7) h),
+		oklch(from var(--color-celadon) 0.82 calc(c * 0.7) h),
+		oklch(from var(--color-saffron) 0.82 calc(c * 0.7) h);
+	--champion-prism: linear-gradient(90deg, var(--champion-prism-stops));
+}
+[data-gate-theme="gate-champion"] .coverage-bar-lit {
+	background-image: var(--champion-prism);
+	background-size: 200% 100%;
+	animation: gradient-flow 6s linear infinite;
+}
+[data-gate-theme="gate-champion"] .coverage-bar-lit > * {
+	background-color: transparent;
+}
+[data-gate-theme="gate-champion"] .press-sheen:not(:disabled),
+[data-gate-theme="gate-champion"] .panel-glyph {
+	background-image: var(--champion-prism);
+	background-size: 200% 100%;
+	animation: gradient-flow 6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-gate-theme="gate-champion"] .coverage-bar-lit,
+	[data-gate-theme="gate-champion"] .press-sheen:not(:disabled),
+	[data-gate-theme="gate-champion"] .panel-glyph {
+		animation: none;
+	}
+}
+@property --champion-border-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+@keyframes champion-border-turn {
+	to {
+		--champion-border-angle: 360deg;
+	}
+}
+[data-gate-theme="gate-champion"] .panel-surface {
+	--champion-panel-ground: oklch(
+		from var(--theme-color) 0.1
+			max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+	);
+	border-color: transparent;
+	background:
+		linear-gradient(var(--champion-panel-ground), var(--champion-panel-ground))
+			padding-box,
+		conic-gradient(
+				from var(--champion-border-angle),
+				var(--champion-prism-stops)
+			)
+			border-box;
+	animation: champion-border-turn 12s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-gate-theme="gate-champion"] .panel-surface {
+		animation: none;
+	}
+}

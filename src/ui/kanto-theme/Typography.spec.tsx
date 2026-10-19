@@ -1,11 +1,10 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { Typography, type TypographyVariant } from "./Typography.ui";
+import { allStyles } from "~/test/styles.harness";
 
-const appCss = readFileSync("src/styles/app.css", "utf8");
+const appCss = allStyles();
 
 const VARIANTS = [
 	"headline",
@@ -236,7 +235,7 @@ describe("Typography", () => {
 	});
 
 	it.each(["text-theme-faint", "text-theme-soft", "text-theme-muted"] as const)(
-		"resolves %s to a utility app.css declares",
+		"resolves %s to a utility the stylesheet declares",
 		(tone) => {
 			expect(appCss).toContain(`@utility ${tone} {`);
 		}

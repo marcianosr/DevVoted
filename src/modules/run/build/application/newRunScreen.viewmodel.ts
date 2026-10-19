@@ -52,21 +52,21 @@ import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 
-import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
-import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
-import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { BuildProps } from "~/modules/run/build/presentation/Build.ui";
+import type { ConfigChipProps } from "~/modules/run/config/presentation/ConfigChip.ui";
+import type { HeaderProps } from "~/modules/run/gate/presentation/Header.ui";
+import type { LeadLine } from "~/modules/run/gate/presentation/Lead.ui";
 import type {
 	RegistryGroup,
 	RegistryProps,
-} from "~/ui/kanto-theme/Registry.ui";
+} from "~/modules/run/build/presentation/Registry.ui";
 import type {
 	NewRunScreenProps,
 	RegistryFilter,
-} from "~/ui/kanto-theme/NewRunScreen.ui";
+} from "~/modules/run/build/presentation/NewRunScreen.ui";
 import type { ActionTone } from "~/ui/kanto-theme/Action.ui";
-import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
-import type { WarmBootProps, WarmBootRow } from "~/ui/kanto-theme/WarmBoot.ui";
+import type { ScreenFooterProps } from "~/modules/run/run/presentation/ScreenFooter.ui";
+import type { WarmBootProps, WarmBootRow } from "~/modules/run/build/presentation/WarmBoot.ui";
 
 const START_GATE = 0;
 const FREE_UPKEEP = 0;

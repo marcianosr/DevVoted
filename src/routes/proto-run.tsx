@@ -76,7 +76,7 @@ import {
 import { bootRun } from "~/modules/run/run/domain/warmBoot.model";
 import { controldex } from "~/modules/collection/dex/domain/controldex.model";
 import { dexControlsFor } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
+import { DexControls } from "~/modules/collection/dex/presentation/DexControls.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import {
 	BASE_SLOTS,
@@ -88,8 +88,8 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	CommunityScreen,
 	type CommunityScreenProps,
-} from "~/ui/kanto-theme/CommunityScreen.ui";
-import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
+} from "~/modules/run/community/presentation/CommunityScreen.ui";
+import type { ClimberProps } from "~/modules/run/community/presentation/Climber.ui";
 import {
 	CATEGORY_CODES,
 	type CategoryCode,

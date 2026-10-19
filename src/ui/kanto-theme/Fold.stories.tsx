@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Fold } from "./Fold.ui";
-import { LedgerRows } from "./LedgerRows.ui";
+import { LedgerRows } from "~/modules/run/run/presentation/LedgerRows.ui";
 import { Screen } from "./Screen.ui";
 
 const COVERAGE = [

@@ -12,7 +12,7 @@ paths:
 Strict two-tier separation, both tiers inside `presentation/`. See
 [ADR-010](../../docs/adr/010-ui-layer-separation.md) for the full decision:
 
-- **Tier 1** `{Name}.ui.tsx` owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story. Lives in `{aggregate}/presentation/` or `src/ui/` (global primitives).
+- **Tier 1** `{Name}.ui.tsx` owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story. Lives in `{aggregate}/presentation/`, or in `src/ui/` only if it names no game concept and imports nothing from DevVoted ([ADR-200](../../docs/adr/200-src-ui-is-a-portable-kit.md)).
 - **Tier 2** `{Name}.component.tsx` and `src/routes/` wire data and mutations to Tier 1: zero HTML, zero CSS.
 
 **Rules enforced on every new file:**

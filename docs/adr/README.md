@@ -184,6 +184,7 @@ it before proposing one again.**
 | [197](197-a-pairs-poll-is-linked-in-full-then-checked.md) | **A pairs poll is linked in full, then checked** | Accepted — draw every link (redraw, clear), Check marks them at once; 4 to 6 pairs, tiles ≤ 30 characters, share = min(right, n−1) ÷ (n−1); a link wears its left tile's number and a non-verdict colour; every answered poll waits for Next (replaces 170 D1) |
 | [198](198-accuracy-reads-as-a-bonus-under-the-gates-cap.md) | **Accuracy reads as a bonus under the gate's cap** | Accepted — a right answer raises the bonus (0.016 a credit), a wrong one lowers the cap, the bonus never passes the cap; payout unchanged (the cap is the old best case); bar is a ×0.25 window ticked every ×0.05 |
 | [199](199-a-pressed-face-opens-the-players-card.md) | **A pressed face opens the player's card** | Accepted, replaces 141 D2 and D3: clicking or tapping a face opens the full player card in a native popover with a close button and the profile link on the name; the hover card is per face and shown by CSS on hover-capable pointers and keyboard focus |
+| [200](200-src-ui-is-a-portable-kit.md) | **src/ui is a portable kit** | Accepted, amends 010: `src/ui` holds primitives only and imports nothing from DevVoted; every visual that names a game concept lives in its aggregate's `presentation/`; the app shell is `app/shell` |
 
 ## Retired
 

@@ -4,7 +4,7 @@ import {
 	BALANCE_WORD,
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
-import type { NavRunReading } from "~/ui/kanto-theme/useNavRun.hook";
+import type { NavRunReading } from "~/modules/app/shell/presentation/useNavRun.hook";
 
 export const navRunFor = (
 	view: RunView | null | undefined

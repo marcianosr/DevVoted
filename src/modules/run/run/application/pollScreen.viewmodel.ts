@@ -56,46 +56,53 @@ import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
 
-import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
-import type { BuildCounts } from "~/ui/kanto-theme/BuildFooter.ui";
-import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
-import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
+import type { AuditProps } from "~/modules/run/run/presentation/Audit.ui";
+import type { BuildCounts } from "~/modules/run/run/presentation/BuildFooter.ui";
+import type { BuildProps } from "~/modules/run/build/presentation/Build.ui";
+import type { ConfigChipBadge } from "~/modules/run/config/presentation/ConfigChip.ui";
+import type { ChoiceState } from "~/modules/run/run/presentation/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
-import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
+import type { CategoryLeaderProps } from "~/modules/run/community/presentation/CategoryLeader.ui";
+import type {
+	PollFact,
+	PollFactsProps,
+} from "~/modules/run/run/presentation/PollFacts.ui";
 import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import { gateTitleOf, type HeaderProps } from "~/ui/kanto-theme/Header.ui";
-import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
+import type { HeaderProps } from "~/modules/run/gate/presentation/Header.ui";
+import type { LeadLine } from "~/modules/run/gate/presentation/Lead.ui";
 
 import { scoredLeadFor } from "./scoredLead.viewmodel";
-import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
+import type { AuthorProps } from "~/modules/polls/poll/presentation/Author.ui";
 import type {
 	PollCommit,
 	PollLock,
 	PollCoverage,
 	PollFlight,
 	PollScreenProps,
-} from "~/ui/kanto-theme/PollScreen.ui";
+} from "~/modules/run/run/presentation/PollScreen.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
 	QuestionPairs,
-} from "~/ui/kanto-theme/Question.ui";
-import type { PairTile, PairVerdict } from "~/ui/kanto-theme/MatchingPairs.ui";
-import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
+} from "~/modules/run/run/presentation/Question.ui";
+import type {
+	PairTile,
+	PairVerdict,
+} from "~/modules/run/run/presentation/MatchingPairs.ui";
+import type { SwatchMark } from "~/modules/run/gate/presentation/Swatch.ui";
 import type {
 	FigureTone,
 	LedgerRow,
 	LedgerTag,
-} from "~/ui/kanto-theme/LedgerRows.ui";
+} from "~/modules/run/run/presentation/LedgerRows.ui";
 import type {
 	PollPaid,
 	PollScoreRow,
 	PollScoresProps,
-} from "~/ui/kanto-theme/PollScores.ui";
+} from "~/modules/run/run/presentation/PollScores.ui";
 import { letterAt } from "~/shared/lib/letters";
+import { gateTitleOf } from "~/modules/run/gate/application/gateTitle.viewmodel";
 
 const OFFLINE_NOTE = "an audit has these offline this gate";
 const HIDDEN_CATEGORY = "?????";

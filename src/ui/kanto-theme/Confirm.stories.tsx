@@ -6,8 +6,8 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { Confirm } from "./Confirm.ui";
 import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
-import { Uninstall } from "./Uninstall.ui";
-import { Weight } from "./Weight.ui";
+import { Uninstall } from "~/modules/run/config/presentation/Uninstall.ui";
+import { Weight } from "~/modules/run/build/presentation/Weight.ui";
 
 const noop = () => {};
 

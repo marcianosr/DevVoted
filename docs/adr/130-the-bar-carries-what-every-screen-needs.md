@@ -132,7 +132,7 @@ stylesheet to prove the token was declared. A pinned `Header` hangs from
 seats at the height of its contents: a small avatar and one row of text.
 
 `__root.tsx` lost 128 lines and states no HTML. The bar is
-`src/ui/kanto-theme/AppNav.ui.tsx` with a Story and a spec, wired by
+`src/modules/app/shell/presentation/AppNav.ui.tsx` with a Story and a spec, wired by
 `src/components/Nav.component.tsx`, the same split `AppFooter` and
 `Footer.component.tsx` use. The mobile hamburger is gone; its items are
 `md:hidden` rows in the account menu.

@@ -95,7 +95,7 @@ was defined six times across four files under two signatures.
 ADR-002 §4.2 forbids `foo.constants.ts` under `src/modules/`, and §5's tree has no
 leaf for a copy file. That is why the shared module is `src/shared/lib/copy.ts`
 and why per-file copy stays inside the file that renders it rather than earning a
-sibling. `src/ui/kanto-theme/upkeep.ts` is the precedent for the shared module's
+sibling. `src/modules/run/shop/application/upkeep.viewmodel.ts` is the precedent for the shared module's
 shape.
 
 Test factories forward production copy instead of restating it — `src/ui` specs

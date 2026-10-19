@@ -7,7 +7,7 @@ import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { getCategories } from "~/shared/lib/categories";
 import { WIKI_PATH } from "~/shared/lib/wikiPath";
 import { pollQueryKeys } from "~/shared/queryKeys";
-import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
+import { AppFooter } from "~/modules/app/shell/presentation/AppFooter.ui";
 
 declare const __LAST_COMMIT_DATE__: string;
 declare const __LAST_COMMIT_AUTHOR__: string;

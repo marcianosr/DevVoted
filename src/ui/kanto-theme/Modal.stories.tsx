@@ -6,7 +6,7 @@ import { uninstallFor } from "~/test/kantoPoll.factory";
 import { Modal } from "./Modal.ui";
 import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
-import { Uninstall } from "./Uninstall.ui";
+import { Uninstall } from "~/modules/run/config/presentation/Uninstall.ui";
 
 const noop = () => {};
 

@@ -6,7 +6,7 @@ import {
 	gateAnswersOf,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { ReviewScreen } from "~/ui/kanto-theme/ReviewScreen.ui";
+import { ReviewScreen } from "./ReviewScreen.ui";
 
 export type ReviewViewProps = {
 	view: RunView;

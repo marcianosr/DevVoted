@@ -1,4 +1,4 @@
-import type { AccuracyTrackProps } from "~/ui/kanto-theme/AccuracyTrack.ui";
+import type { AccuracyTrackProps } from "~/modules/run/run/presentation/AccuracyTrack.ui";
 import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
 import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
@@ -61,48 +61,51 @@ import { kbLabel, STORAGE_UNITS } from "~/shared/lib/storage";
 import { scoredLeadFor } from "~/modules/run/run/application/scoredLead.viewmodel";
 import { scoringFor } from "~/modules/run/run/application/scoring.viewmodel";
 
-import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
-import type { BandOutcomesProps } from "~/ui/kanto-theme/BandOutcomes.ui";
-import type { ScoringProps } from "~/ui/kanto-theme/Scoring.ui";
-import type { BuildProps, BuildWeight } from "~/ui/kanto-theme/Build.ui";
-import type { BuildFooterProps } from "~/ui/kanto-theme/BuildFooter.ui";
+import type { AuditProps } from "~/modules/run/run/presentation/Audit.ui";
+import type { BandOutcomesProps } from "~/modules/run/gate/presentation/BandOutcomes.ui";
+import type { ScoringProps } from "~/modules/run/run/presentation/Scoring.ui";
+import type {
+	BuildProps,
+	BuildWeight,
+} from "~/modules/run/build/presentation/Build.ui";
+import type { BuildFooterProps } from "~/modules/run/run/presentation/BuildFooter.ui";
 import type {
 	ConfigChipBadge,
 	ConfigChipProps,
-} from "~/ui/kanto-theme/ConfigChip.ui";
+} from "~/modules/run/config/presentation/ConfigChip.ui";
 import type {
 	RegistryGroup,
 	RegistryProps,
-} from "~/ui/kanto-theme/Registry.ui";
-import type { SlotTrackFill } from "~/ui/kanto-theme/SlotTrack.ui";
+} from "~/modules/run/build/presentation/Registry.ui";
+import type { SlotTrackFill } from "~/modules/run/build/presentation/SlotTrack.ui";
 import type {
 	WeightTrackFill,
 	WeightTrackProps,
-} from "~/ui/kanto-theme/WeightTrack.ui";
-import type { UnlockedRegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+} from "~/modules/run/build/presentation/WeightTrack.ui";
+import type { UnlockedRegistryControlProps } from "~/modules/run/build/presentation/RegistryControl.ui";
 import type {
 	ShopScreenProps,
 	ShopServiceRow,
-} from "~/ui/kanto-theme/ShopScreen.ui";
-import type { UninstallProps } from "~/ui/kanto-theme/Uninstall.ui";
-import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
+import type { UninstallProps } from "~/modules/run/config/presentation/Uninstall.ui";
+import type { PrepScreenProps } from "~/modules/run/run/presentation/PrepScreen.ui";
 import type {
 	NewRunScreenProps,
 	RegistryFilter,
-} from "~/ui/kanto-theme/NewRunScreen.ui";
-import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
-import type { PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
+} from "~/modules/run/build/presentation/NewRunScreen.ui";
+import type { ScreenFooterProps } from "~/modules/run/run/presentation/ScreenFooter.ui";
+import type { PollFactsProps } from "~/modules/run/run/presentation/PollFacts.ui";
 import type {
 	PollReadout,
 	PollScreenProps,
-} from "~/ui/kanto-theme/PollScreen.ui";
+} from "~/modules/run/run/presentation/PollScreen.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
-import type { CoverageRingProps } from "~/ui/kanto-theme/CoverageRing.ui";
+} from "~/modules/run/run/presentation/Question.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
+import type { LeadLine } from "~/modules/run/gate/presentation/Lead.ui";
+import type { CoverageRingProps } from "~/modules/run/build/presentation/CoverageRing.ui";
 
 import { createMockDataFactory } from "~/test/createMockDataFactory";
 import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
@@ -940,10 +943,10 @@ import {
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { OutageTargetView } from "~/modules/run/run/application/runView.viewmodel";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
-import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import type { RunReadoutProps } from "~/modules/run/run/presentation/RunReadout.ui";
+import type { HeaderProps } from "~/modules/run/gate/presentation/Header.ui";
 import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
-import type { WarmBootProps } from "~/ui/kanto-theme/WarmBoot.ui";
+import type { WarmBootProps } from "~/modules/run/build/presentation/WarmBoot.ui";
 
 export const SCORING = {
 	single: SINGLE_CREDIT,

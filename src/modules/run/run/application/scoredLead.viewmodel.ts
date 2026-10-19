@@ -5,7 +5,7 @@ import {
 	type GateLadder,
 } from "~/modules/run/gate/domain/gate.model";
 
-import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { LeadLine } from "~/modules/run/gate/presentation/Lead.ui";
 
 const SCORED_LEAD = "You hold ";
 const SCORED_CLOSE = " coverage.";

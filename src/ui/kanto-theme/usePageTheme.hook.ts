@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect } from "react";
 
-import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
-
-import type { KantoColor } from "./colors";
+import type { GateTheme, KantoColor } from "./colors";
 
 export type PageTheme = {
 	theme?: KantoColor;
-	gate?: SwatchTheme;
+	gate?: GateTheme;
 };
 
 export const UNTHEMED_PAGE: KantoColor = "pewter";
@@ -19,7 +17,7 @@ export const PageThemeContext = createContext<(page: PageTheme) => void>(
 
 type PageThemeAttributes = {
 	"data-screen-theme"?: KantoColor;
-	"data-gate-theme"?: SwatchTheme;
+	"data-gate-theme"?: GateTheme;
 };
 
 export const pageThemeAttributes = ({

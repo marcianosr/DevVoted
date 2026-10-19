@@ -5,38 +5,38 @@ import type {
 	DexAuditDetail,
 	DexAuditRow,
 	DexAuditsProps,
-} from "~/ui/kanto-theme/DexAudits.ui";
-import type { ConfigUnlockPath } from "~/ui/kanto-theme/ConfigUnlock.ui";
+} from "~/modules/collection/dex/presentation/DexAudits.ui";
+import type { ConfigUnlockPath } from "~/modules/run/config/presentation/ConfigUnlock.ui";
 import type {
 	DexConfigCard,
 	DexConfigDetail,
 	DexConfigRow,
 	DexConfigsProps,
-} from "~/ui/kanto-theme/DexConfigs.ui";
+} from "~/modules/collection/dex/presentation/DexConfigs.ui";
 import type {
 	DexControlDetail,
 	DexControlRow,
 	DexControlsProps,
-} from "~/ui/kanto-theme/DexControls.ui";
+} from "~/modules/collection/dex/presentation/DexControls.ui";
 import type {
 	DexPollDetail,
 	DexPollRow,
 	DexPollTile,
 	DexPollsProps,
-} from "~/ui/kanto-theme/DexPolls.ui";
+} from "~/modules/collection/dex/presentation/DexPolls.ui";
 import type {
 	DexRunDetail,
 	DexRunRow,
 	DexRunsProps,
-} from "~/ui/kanto-theme/DexRuns.ui";
+} from "~/modules/collection/dex/presentation/DexRuns.ui";
 import type {
 	DexSwatchDetail,
 	DexSwatchRow,
 	DexSwatchesProps,
-} from "~/ui/kanto-theme/DexSwatches.ui";
+} from "~/modules/collection/dex/presentation/DexSwatches.ui";
 import { REDACTED } from "~/ui/kanto-theme/Redaction.ui";
 import type { SegmentedItem } from "~/ui/kanto-theme/Segmented.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 
 type PollFixture = {
 	id: string;
