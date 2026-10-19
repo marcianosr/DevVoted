@@ -43,7 +43,7 @@ import type {
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
 
 export type AuditView = {
 	readonly id: AuditId;

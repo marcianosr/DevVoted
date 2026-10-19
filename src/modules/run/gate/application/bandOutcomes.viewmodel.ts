@@ -14,17 +14,20 @@ import { signedKbLabel } from "~/shared/lib/storage";
 import type {
 	BandLadderProps,
 	LadderRung,
-} from "~/ui/kanto-theme/BandLadder.ui";
-import type { BandOutcomesProps } from "~/ui/kanto-theme/BandOutcomes.ui";
+} from "~/modules/run/gate/presentation/BandLadder.ui";
+import type { BandOutcomesProps } from "~/modules/run/gate/presentation/BandOutcomes.ui";
 import type {
 	CoverageBandId,
 	CoverageLadder,
-} from "~/ui/kanto-theme/CoverageBar.ui";
-import type { LeadLine, LeadPart } from "~/ui/kanto-theme/Lead.ui";
+} from "~/modules/run/build/presentation/CoverageBar.ui";
+import type {
+	LeadLine,
+	LeadPart,
+} from "~/modules/run/gate/presentation/Lead.ui";
 import type {
 	Objective,
 	ObjectivesProps,
-} from "~/ui/kanto-theme/Objectives.ui";
+} from "~/modules/run/gate/presentation/Objectives.ui";
 
 const AS_PERCENT = 100;
 const ROOM = 1;

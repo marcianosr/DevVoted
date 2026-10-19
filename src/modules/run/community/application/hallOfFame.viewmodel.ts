@@ -8,7 +8,7 @@ import { profilePathFor } from "~/shared/lib/profilePath";
 import type {
 	HallOfFameProps,
 	HallOfFameWin,
-} from "~/ui/kanto-theme/HallOfFame.ui";
+} from "~/modules/run/community/presentation/HallOfFame.ui";
 
 export const COPY = {
 	title: "Hall of Fame",

@@ -16,15 +16,15 @@ import {
 import { answeredPairsFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
 import type { OptionVotes } from "~/modules/run/community/application/communityScreen.viewmodel";
-import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
+import type { AuthorProps } from "~/modules/polls/poll/presentation/Author.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
+} from "~/modules/run/run/presentation/Question.ui";
 import type {
 	ReviewRow,
 	ReviewScreenProps,
-} from "~/ui/kanto-theme/ReviewScreen.ui";
+} from "~/modules/run/run/presentation/ReviewScreen.ui";
 
 const noop = () => {};
 

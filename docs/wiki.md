@@ -1218,7 +1218,7 @@ Pewter"), never as a gate's name.
 
 A full bar in any run earns that gate's swatch **permanently and
 account-wide**; earning it again is a no-op, so the collection only grows. Colours come from each city
-in the Kanto palette and live in `app.css` under `[data-swatch-theme]`, never
+in the Kanto palette and live in `gateThemes.css` under `[data-swatch-theme]`, never
 duplicated in TypeScript. The palette runs out at 13 gates against 12 colours, one of
 them the app background, so the summit pair are drawn apart: **Indigo Elite** keeps indigo
 (it _is_ Indigo Plateau) with a rim so it reads, and the **Champion** alone wears the

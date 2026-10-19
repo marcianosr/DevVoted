@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { useState, type ReactNode } from "react";
 
 import { describe, expect, it } from "vitest";
@@ -14,8 +12,9 @@ import {
 	pageThemeAttributes,
 	type PageTheme,
 } from "./usePageTheme.hook";
+import { allStyles } from "~/test/styles.harness";
 
-const appCss = readFileSync("src/styles/app.css", "utf8");
+const appCss = allStyles();
 
 describe("Screen", () => {
 	it.each(KANTO_COLORS)("hands its subtree the %s colour", (name) => {
@@ -24,9 +23,12 @@ describe("Screen", () => {
 		expect(container.firstChild).toHaveAttribute("data-screen-theme", name);
 	});
 
-	it.each(KANTO_COLORS)("resolves %s to a theme colour in app.css", (name) => {
-		expect(appCss).toContain(`[data-screen-theme="${name}"]`);
-	});
+	it.each(KANTO_COLORS)(
+		"resolves %s to a theme colour in the stylesheet",
+		(name) => {
+			expect(appCss).toContain(`[data-screen-theme="${name}"]`);
+		}
+	);
 
 	it("renders its children inside the themed element", () => {
 		const { container } = render(<Screen theme="cinnabar">body</Screen>);
@@ -83,7 +85,7 @@ describe("Screen", () => {
 		expect(container.firstChild?.firstChild).not.toHaveClass("screen-rise");
 	});
 
-	it("edges itself with the faintest theme rung app.css defines", () => {
+	it("edges itself with the faintest theme rung the stylesheet defines", () => {
 		const { container } = render(<Screen theme="cinnabar">body</Screen>);
 
 		expect(container.firstChild).toHaveClass("border-theme-faint");

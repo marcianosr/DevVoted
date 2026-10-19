@@ -20,14 +20,12 @@ tiers, but no file mixes them.
 
 **Tier 1 — Presentational (design system): `{Name}.ui.tsx`**
 
-- `src/ui/` — global primitives (`Button`, typography; legacy files still use
-  the `.component.tsx` suffix, rename opportunistically).
-- `src/modules/{context}/{aggregate}/presentation/` — aggregate visuals,
-  colocated with the concept's own domain and application layers
-  (e.g. `run/gate/presentation/GateRewardReport.ui.tsx`).
-- `src/ui/kanto-theme/` — the one kit: global primitives and the screens built
-  from them. The older `src/ui/{domain}/` folders and `src/ui/old-theme/` are
-  gone (`DVTD-6crx`); `~/ui/old-theme/*` is an oxlint error.
+- `src/ui/kanto-theme/` — the one kit: primitives that name no game concept
+  (`Button`, `Panel`, `Badge`, `Typography`, form fields). It imports nothing
+  from DevVoted ([ADR-200](200-src-ui-is-a-portable-kit.md)).
+- `src/modules/{context}/{aggregate}/presentation/` — every visual that names a
+  game concept, screens included, colocated with the concept's own domain and
+  application layers (e.g. `run/config/presentation/ConfigChip.ui.tsx`).
 - These files own **all HTML tags and Tailwind classes in the codebase**.
 - They accept plain data props only — no *data* hooks, no server functions, no
   TanStack Query. React hooks over the component's own props are allowed and in
@@ -67,10 +65,11 @@ wiring (full table in ADR-002).
 
 ## Enforcement
 
-- `npm run lint:arch` (dependency-cruiser): `src/ui` may take only **type**
-  imports from modules. Any runtime import of hooks, repositories or server
-  functions fails the build. This rule scopes `src/ui/` only; `.ui.tsx` purity
-  inside `{aggregate}/presentation/` is review-enforced.
+- `npm run lint:arch` (dependency-cruiser, `ui-is-a-portable-kit`): `src/ui`
+  imports nothing from modules, types included, and none of the game's copy or
+  rules in `src/shared/lib` ([ADR-200](200-src-ui-is-a-portable-kit.md)). Stories
+  are exempt. `.ui.tsx` purity inside `{aggregate}/presentation/` is
+  review-enforced.
 - ADR-002 §4.1 pins both suffixes to `presentation/`, so a `.ui.tsx` in
   `domain/` or a `.model.ts` in `presentation/` is a placement violation
   independent of what it imports.

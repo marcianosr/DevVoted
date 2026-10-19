@@ -7,7 +7,7 @@ import {
 	type GateSwatch,
 	type SwatchTheme,
 } from "~/modules/run/gate/domain/swatch.model";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 
 export type SwatchPickState = "worn" | "owned" | "locked";
 

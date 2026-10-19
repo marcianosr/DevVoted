@@ -1,6 +1,6 @@
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
 import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
-import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
+import type { FooterAction } from "~/modules/run/run/presentation/ScreenFooter.ui";
 import {
 	AUDITS,
 	NEW_BADGE,
@@ -65,23 +65,26 @@ import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type {
 	AuditsPanelProps,
 	AuditsRow,
-} from "~/ui/kanto-theme/AuditsPanel.ui";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
-import type { LedgerProps } from "~/ui/kanto-theme/Ledger.ui";
-import type { LedgerFigure } from "~/ui/kanto-theme/LedgerRows.ui";
-import type { PollTile, PollTilesProps } from "~/ui/kanto-theme/PollTiles.ui";
+} from "~/modules/run/run/presentation/AuditsPanel.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
+import type { BalanceProps } from "~/modules/run/run/presentation/Balance.ui";
+import type { LedgerProps } from "~/modules/run/run/presentation/Ledger.ui";
+import type { LedgerFigure } from "~/modules/run/run/presentation/LedgerRows.ui";
+import type {
+	PollTile,
+	PollTilesProps,
+} from "~/modules/run/run/presentation/PollTiles.ui";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
-import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
-import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
-import type { SlaPickerProps } from "~/ui/kanto-theme/SlaPicker.ui";
-import type { ApprovalListProps } from "~/ui/kanto-theme/ApprovalList.ui";
+import type { PrepScreenProps } from "~/modules/run/run/presentation/PrepScreen.ui";
+import type { EstimatePickerProps } from "~/modules/run/run/presentation/EstimatePicker.ui";
+import type { SlaPickerProps } from "~/modules/run/run/presentation/SlaPicker.ui";
+import type { ApprovalListProps } from "~/modules/run/run/presentation/ApprovalList.ui";
 import {
 	APPROVALS_NEEDED,
 	type ApprovalBoard,
 } from "~/modules/run/run/domain/approval.model";
 import { accuracyTrackFor } from "~/modules/run/run/application/accuracyTrack.viewmodel";
-import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
+import type { RebaseListProps } from "~/modules/run/run/presentation/RebaseList.ui";
 
 export const BALANCE_WORD = STORAGE_BALANCE;
 

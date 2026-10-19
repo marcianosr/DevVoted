@@ -26,12 +26,18 @@ import {
 import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { kbLabel } from "~/shared/lib/storage";
-import type { ContributionProps } from "~/ui/kanto-theme/Contribution.ui";
-import {
-	COPY as CARD_COPY,
-	type ClimberCardProps,
-	type ClimberCardStanding,
-} from "~/ui/kanto-theme/ClimberCard.ui";
+import type { ContributionProps } from "~/modules/run/community/presentation/Contribution.ui";
+import type {
+	ClimberCardProps,
+	ClimberCardStanding,
+} from "~/modules/run/community/presentation/ClimberCard.ui";
+
+export const CARD_COPY = {
+	storage: "run storage",
+	streak: "streak",
+	best: "best",
+	none: "—",
+} as const;
 
 const STORAGE_COLOR: KantoColor = "saffron";
 

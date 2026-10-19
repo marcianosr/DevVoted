@@ -4,7 +4,7 @@ import {
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { ApprovalBoard } from "~/modules/run/run/domain/approval.model";
-import { PrepScreen } from "~/ui/kanto-theme/PrepScreen.ui";
+import { PrepScreen } from "./PrepScreen.ui";
 
 export type PrepViewProps = PrepScreenHandlers & {
 	view: RunView;

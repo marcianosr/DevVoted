@@ -49,7 +49,7 @@ These load automatically when you read a matching file (`paths:` frontmatter). R
 
 - `.claude/rules/architecture.md`: module layout, ADR-002 decision tree, suffix allowlist, DTOs
 - `.claude/rules/react.md`: UI tiers (ADR-010), COPY, Stories, query keys, QueryClient
-- `.claude/rules/css.md`: Tailwind, kanto theme, `app.css`
+- `.claude/rules/css.md`: Tailwind, kanto theme, where each stylesheet lives
 - `.claude/rules/typescript.md`: arrow functions, no `else`, composition, immutability
 - `.claude/rules/backend.md`: authorization, `handleApiOperation`
 - `.claude/rules/database.md`: schema, migrations (ADR-012), transactions, db commands
@@ -68,6 +68,5 @@ These load automatically when you read a matching file (`paths:` frontmatter). R
   that stay are functional directives — `///` references, `eslint-disable`,
   `oxlint-disable`, `@ts-expect-error`, `@ts-nocheck`, `@vitest-environment` —
   and a tool's own user-facing message field (dependency-cruiser `comment`,
-  thrown error strings), which is output, not commentary. `src/styles/app.css` is
-  exempt: its comments document the Kanto token system. This has been swept three
+  thrown error strings), which is output, not commentary. CSS included. This has been swept three
   times (DVTD-k2aw, DVTD-fw0z, DVTD-8wq2); treat the zero default as standing.

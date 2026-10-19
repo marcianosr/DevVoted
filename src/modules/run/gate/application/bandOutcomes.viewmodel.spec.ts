@@ -9,8 +9,8 @@ import {
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
-import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
-import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
+import type { CoverageLadder } from "~/modules/run/build/presentation/CoverageBar.ui";
+import { leadTextOf } from "~/modules/run/gate/presentation/Lead.ui";
 
 import {
 	answersOwedFor,

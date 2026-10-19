@@ -7,7 +7,7 @@ import {
 	openedUserIdOf,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { usePlayerCard } from "~/modules/run/community/application/usePlayerCard.hook";
-import { CommunityScreen } from "~/ui/kanto-theme/CommunityScreen.ui";
+import { CommunityScreen } from "./CommunityScreen.ui";
 import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 
 export type CommunityViewProps = CommunityScreenFrame;

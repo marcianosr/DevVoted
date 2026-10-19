@@ -47,48 +47,59 @@ import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import { percentOf } from "~/modules/run/build/domain/coverageRatio.model";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import {
-	gatesLabelOf,
-	type DexAuditDetail,
-	type DexAuditRow,
-	type DexAuditsData,
-} from "~/ui/kanto-theme/DexAudits.ui";
-import type { ConfigUnlockPath } from "~/ui/kanto-theme/ConfigUnlock.ui";
+import type {
+	DexAuditDetail,
+	DexAuditRow,
+	DexAuditsData,
+} from "~/modules/collection/dex/presentation/DexAudits.ui";
+import type { ConfigUnlockPath } from "~/modules/run/config/presentation/ConfigUnlock.ui";
 import type {
 	DexConfigCard,
 	DexConfigDetail,
 	DexConfigRow,
 	DexConfigsData,
-} from "~/ui/kanto-theme/DexConfigs.ui";
+} from "~/modules/collection/dex/presentation/DexConfigs.ui";
 import type {
 	DexControlDetail,
 	DexControlRow,
 	DexControlsData,
-} from "~/ui/kanto-theme/DexControls.ui";
+} from "~/modules/collection/dex/presentation/DexControls.ui";
 import type {
 	DexPollDetail,
 	DexPollRow,
 	DexPollTile,
 	DexPollsData,
-} from "~/ui/kanto-theme/DexPolls.ui";
-import {
-	heldOutcomeOf,
-	WON_OUTCOME,
-	type DexRunDetail,
-	type DexRunRow,
-	type DexRunsData,
-} from "~/ui/kanto-theme/DexRuns.ui";
-import {
-	gateNoteOf,
-	SWEPT_NOTE,
-	type DexSwatchDetail,
-	type DexSwatchRow,
-	type DexSwatchesData,
-} from "~/ui/kanto-theme/DexSwatches.ui";
+} from "~/modules/collection/dex/presentation/DexPolls.ui";
+import type {
+	DexRunDetail,
+	DexRunRow,
+	DexRunsData,
+} from "~/modules/collection/dex/presentation/DexRuns.ui";
+import type {
+	DexSwatchDetail,
+	DexSwatchRow,
+	DexSwatchesData,
+} from "~/modules/collection/dex/presentation/DexSwatches.ui";
 import { REDACTED } from "~/ui/kanto-theme/Redaction.ui";
 import type { SegmentedItem } from "~/ui/kanto-theme/Segmented.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 import type { TabItem } from "~/ui/kanto-theme/Tabs.ui";
+
+const NO_GATES = "—";
+
+export const gatesLabelOf = (gates: readonly number[]): string => {
+	if (gates.length === 0) return NO_GATES;
+	if (gates.length === 1) return `gate ${gates[0]}`;
+	return `gates ${gates[0]}–${gates[gates.length - 1]}`;
+};
+
+export const WON_OUTCOME = "champion";
+
+export const heldOutcomeOf = (gateName: string): string => `${gateName} held`;
+
+export const SWEPT_NOTE = "swept";
+
+export const gateNoteOf = (gate: number): string => `gate ${gate}`;
 
 export type DexTabId =
 	"polls" | "configs" | "controls" | "audits" | "swatches" | "runs";

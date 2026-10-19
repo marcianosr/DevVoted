@@ -22,7 +22,7 @@ import type {
 	ScoringProps,
 	ScoringStep,
 	ScoringTone,
-} from "~/ui/kanto-theme/Scoring.ui";
+} from "~/modules/run/run/presentation/Scoring.ui";
 
 const UP_TO = "up to";
 const ACCURACY_LABEL = "Accuracy Bonus";

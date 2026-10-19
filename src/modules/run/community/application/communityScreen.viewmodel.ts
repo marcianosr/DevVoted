@@ -1,5 +1,5 @@
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
-import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
+import type { HallOfFameProps } from "~/modules/run/community/presentation/HallOfFame.ui";
 
 import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
@@ -32,14 +32,14 @@ import type {
 	CommunityRecords,
 	CommunityTurnout,
 	TurnoutBand,
-} from "~/ui/kanto-theme/CommunityScreen.ui";
-import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
-import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
+} from "~/modules/run/community/presentation/CommunityScreen.ui";
+import type { ClimberProps } from "~/modules/run/community/presentation/Climber.ui";
+import type { IncidentsPanelProps } from "~/modules/run/incident/presentation/IncidentsPanel.ui";
 import type {
 	PollSpotlightProps,
 	SpotlightPoll,
-} from "~/ui/kanto-theme/PollSpotlight.ui";
-import type { OpenedCardDetail } from "~/ui/kanto-theme/ClimbMap.ui";
+} from "~/modules/run/community/presentation/PollSpotlight.ui";
+import type { OpenedCardDetail } from "~/modules/run/community/presentation/ClimbMap.ui";
 import {
 	type PlayerCardView,
 	playerCardFor,
