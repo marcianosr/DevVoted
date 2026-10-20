@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **Buttons, dialogs and menus move instead of jumping.** Plain buttons shrink a little while you press them. Dialogs fade in instead of cutting in. The account menu grows out of your avatar, and folded sections slide open and shut. With reduced motion turned on, things fade without moving.
+
 ### Fixed
 - **A locked upgrade says what it needs.** A file-type config like `.js` only upgrades once you hold enough coverage in its category, but its upgrade press showed just the price, so plenty of KB still met a greyed-out button. While coverage locks it, the press now reads what it needs, like **needs 15% JavaScript**.
 - **The gain no longer flies off a phone's screen.** On a phone the coverage bar sits under the poll, out of view, so a right answer's gain flew off the bottom edge. When the bar is out of view, the gain now rises and fades beside your answer.

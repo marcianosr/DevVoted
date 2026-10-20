@@ -7,7 +7,7 @@ import type { KantoColor } from "./colors";
 import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography, type TypographyVariant } from "./Typography.ui";
 
-const FOLD = "group/fold w-full";
+const FOLD = "fold-reveal group/fold w-full";
 const SUMMARY =
 	"flex cursor-pointer list-none flex-wrap items-center gap-3 border-theme-faint px-4 py-3 select-none group-open/fold:border-b [&::-webkit-details-marker]:hidden";
 const CARET =

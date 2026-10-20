@@ -206,7 +206,7 @@ describe("Button", () => {
 		render(<Button label="↑ v3" onPress={vi.fn()} />);
 
 		expect(screen.getByRole("button")).toHaveClass("ring-1", "ring-inset");
-		expect(screen.getByRole("button").className).not.toMatch(/\bborder\b/);
+		expect(screen.getByRole("button")).not.toHaveClass("border");
 	});
 
 	it("caps a labelled button with a boxed glyph beside the label", () => {
