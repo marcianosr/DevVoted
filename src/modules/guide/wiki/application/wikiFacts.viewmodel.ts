@@ -26,6 +26,8 @@ import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import {
 	GATE_COUNT,
 	GATE_REWARD_KB,
+	PIN_FROM_GATE,
+	PIN_UNTIL_GATE,
 	VICTORY_GATE,
 	failPeelShareFor,
 	gateRewardMultiplier,
@@ -40,6 +42,7 @@ export const GATE_UNLOCK = {
 	shop: "Shop",
 	rebuild: "Rebuild",
 	extend: "Extend",
+	gitTag: `git tag, sold through gate ${PIN_UNTIL_GATE}`,
 	summit: "Clearing it on HEALTHY or better wins the run",
 } as const;
 
@@ -65,6 +68,7 @@ const unlocksAt = (gate: number): readonly string[] =>
 		gate === 0 ? GATE_UNLOCK.shop : undefined,
 		gate === 0 ? GATE_UNLOCK.rebuild : undefined,
 		gate === EXTEND_FROM_GATE ? GATE_UNLOCK.extend : undefined,
+		gate === PIN_FROM_GATE ? GATE_UNLOCK.gitTag : undefined,
 		gate === VICTORY_GATE ? GATE_UNLOCK.summit : undefined,
 	].filter((unlock) => unlock !== undefined);
 
