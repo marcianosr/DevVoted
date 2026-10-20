@@ -5,7 +5,7 @@ import type { KantoColor } from "./colors";
 import { Icon, type IconName } from "./Icon.ui";
 
 const BUTTON =
-	"group/press items-center justify-center leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+	"group/press items-center justify-center leading-none ring-1 ring-inset disabled:cursor-not-allowed disabled:opacity-40";
 
 const FIGURES = "font-bold tabular-nums whitespace-nowrap";
 
@@ -56,20 +56,21 @@ const DETAIL = {
 	always: undefined,
 } satisfies Record<DetailReveal, string | undefined>;
 
-const AMBIENT =
-	"ring-theme-faint text-theme-muted enabled:hover:text-theme-soft enabled:hover:ring-theme-soft";
-const ACTION = "press-theme ring-theme-soft";
-const DANGER =
-	"ring-theme-soft text-theme-soft enabled:hover:bg-theme-soft enabled:hover:text-theme-faint";
-const BARE = "ring-transparent text-theme-muted enabled:hover:text-theme-faint";
-const BRIGHT = "segment-theme ring-transparent hover:brightness-110";
+const FLAT_PRESS =
+	"transition-[color,background-color,border-color,scale] duration-150 ease-out-strong enabled:active:scale-97 motion-reduce:enabled:active:scale-100";
+
+const AMBIENT = `${FLAT_PRESS} ring-theme-faint text-theme-muted enabled:hover:text-theme-soft enabled:hover:ring-theme-soft`;
+const ACTION = `${FLAT_PRESS} press-theme ring-theme-soft`;
+const DANGER = `${FLAT_PRESS} ring-theme-soft text-theme-soft enabled:hover:bg-theme-soft enabled:hover:text-theme-faint`;
+const BARE = `${FLAT_PRESS} ring-transparent text-theme-muted enabled:hover:text-theme-faint`;
+const BRIGHT =
+	"segment-theme ring-transparent transition-colors hover:brightness-110";
 const RAISED =
 	"segment-theme press-raised ring-transparent enabled:hover:brightness-110 enabled:active:press-sunk disabled:bg-none disabled:bg-theme-faint disabled:text-theme-muted disabled:shadow-none";
 const PRIMARY = `${RAISED} press-sheen`;
 const DESTRUCTIVE = RAISED;
 const PRISMATIC = `${RAISED} press-prismatic`;
-const SLOT =
-	"border border-dashed border-theme-faint ring-transparent text-theme-muted enabled:hover:border-theme-soft enabled:hover:text-theme-soft";
+const SLOT = `${FLAT_PRESS} border border-dashed border-theme-faint ring-transparent text-theme-muted enabled:hover:border-theme-soft enabled:hover:text-theme-soft`;
 
 const ACTIVE = "bg-theme text-theme-faint ring-theme";
 const ACTIVE_BARE = "text-theme-faint";

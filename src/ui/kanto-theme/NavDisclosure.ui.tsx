@@ -4,9 +4,12 @@ const ROOT = "relative";
 const SUMMARY =
 	"flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1 text-theme-faint marker:content-[''] hover:bg-theme-raised";
 const PANEL =
-	"absolute z-30 mt-1 flex min-w-44 flex-col rounded-md border border-theme-faint bg-theme-faint py-1 shadow-lg";
+	"absolute z-30 mt-1 flex min-w-44 flex-col rounded-md border border-theme-faint bg-theme-faint py-1 shadow-lg transition-[opacity,scale] duration-150 ease-out-strong starting:opacity-0 starting:scale-97 motion-reduce:starting:scale-100";
 
-const ALIGN = { left: "left-0", right: "right-0" } as const;
+const ALIGN = {
+	left: "left-0 origin-top-left",
+	right: "right-0 origin-top-right",
+} as const;
 
 export type NavAlign = keyof typeof ALIGN;
 

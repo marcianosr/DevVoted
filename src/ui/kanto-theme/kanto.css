@@ -55,6 +55,7 @@
 	--text-display--line-height: 1.35;
 
 	--font-display: "Pixter Display", sans-serif;
+	--ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 @theme inline {
 	--color-theme: var(--theme-color);
@@ -421,5 +422,32 @@ meter::-webkit-meter-optimum-value {
 	from {
 		opacity: 0;
 		transform: translateY(10px);
+	}
+}
+
+.fold-reveal {
+	interpolate-size: allow-keywords;
+}
+
+.fold-reveal::details-content {
+	block-size: 0;
+	overflow: clip;
+	opacity: 0;
+	transition:
+		block-size 200ms var(--ease-out-strong),
+		opacity 200ms var(--ease-out-strong),
+		content-visibility 200ms allow-discrete;
+}
+
+.fold-reveal[open]::details-content {
+	block-size: auto;
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fold-reveal::details-content {
+		transition:
+			opacity 200ms var(--ease-out-strong),
+			content-visibility 200ms allow-discrete;
 	}
 }

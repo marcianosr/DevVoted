@@ -6,8 +6,10 @@ import type { KantoColor } from "./colors";
 import { Panel, PANEL_SURFACE } from "./Panel.ui";
 
 const WRAP = "fixed inset-0 z-50 flex items-center justify-center p-4";
-const SCRIM = "absolute inset-0 cursor-default bg-black/70";
-const DIALOG = "relative w-100 max-w-full";
+const SCRIM =
+	"absolute inset-0 cursor-default bg-black/70 transition-opacity duration-200 ease-out starting:opacity-0";
+const DIALOG =
+	"relative w-100 max-w-full transition-[opacity,scale] duration-250 ease-out-strong starting:opacity-0 starting:scale-96 motion-reduce:starting:scale-100";
 
 const DISMISS_LABEL = "Dismiss";
 
