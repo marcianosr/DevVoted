@@ -33,7 +33,9 @@ export const ensureUserExists = async (
 			userId: userData.id,
 		});
 
-		const byEmail = await findUserByEmail(userData.email);
+		const byEmail = userData.email
+			? await findUserByEmail(userData.email)
+			: undefined;
 		if (byEmail) return byEmail;
 
 		throw error;

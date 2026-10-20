@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,6 +18,7 @@ const BASE: LoginScreenProps = {
 	hero: heroFor(),
 	card: demoCardFor(FIRST_STEP),
 	github: { pending: false, onPress: vi.fn() },
+	guest: { pending: false, onPress: vi.fn() },
 	wikiHref: "/wiki",
 };
 
@@ -49,6 +51,25 @@ describe("LoginScreen", () => {
 		expect(
 			screen.getByRole("link", { name: "Read how this game works" })
 		).toHaveAttribute("href", "/wiki");
+	});
+
+	it("offers today's five without an account and starts it on press", async () => {
+		const onPress = vi.fn();
+		render(<LoginScreen {...BASE} guest={{ pending: false, onPress }} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Play today without an account" })
+		);
+
+		expect(onPress).toHaveBeenCalledOnce();
+	});
+
+	it("disables the guest press and reads Starting while the guest session opens", () => {
+		render(
+			<LoginScreen {...BASE} guest={{ pending: true, onPress: vi.fn() }} />
+		);
+
+		expect(screen.getByRole("button", { name: "Starting…" })).toBeDisabled();
 	});
 
 	it("disables the press and reads Redirecting while the redirect is pending", () => {

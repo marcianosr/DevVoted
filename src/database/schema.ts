@@ -58,7 +58,8 @@ export const visitDevice = pgEnum("visit_device", [
 export const usersTable = pgTable("users", {
 	id: uuid("id").primaryKey(),
 	display_name: varchar("display_name", { length: 256 }).notNull(),
-	email: varchar("email", { length: 256 }).notNull().unique(),
+	email: varchar("email", { length: 256 }).unique(),
+	is_guest: boolean("is_guest").notNull().default(false),
 	photo_url: text("photo_url"),
 	github_username: varchar("github_username", { length: 100 }),
 	role: userRoles("roles").notNull().default("user"),

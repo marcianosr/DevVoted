@@ -14,6 +14,7 @@ import {
 } from "~/modules/account/auth/application/loginDemo.viewmodel";
 import {
 	loginFn,
+	playAsGuestFn,
 	signupFn,
 } from "~/modules/account/auth/application/auth.serverfn";
 import type { AuthProps } from "~/modules/account/auth/presentation/Auth.ui";
@@ -52,6 +53,16 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 				await router.invalidate();
 				router.navigate({ to: "/" });
 			}
+		},
+	});
+
+	const guestMutation = useMutation({
+		mutationFn: () => playAsGuestFn(),
+		onSuccess: async (data) => {
+			if (data.error) return;
+			queryClient.clear();
+			await router.invalidate();
+			router.navigate({ to: "/run" });
 		},
 	});
 
@@ -104,6 +115,10 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 			hero={heroFor()}
 			card={demoCardFor(step)}
 			github={{ pending: githubPending, onPress: handleGithubLogin }}
+			guest={{
+				pending: guestMutation.isPending,
+				onPress: () => guestMutation.mutate(),
+			}}
 			wikiHref={WIKI_PATH}
 			devSignIn={
 				isDevelopment

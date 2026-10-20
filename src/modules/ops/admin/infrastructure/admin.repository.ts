@@ -81,8 +81,12 @@ export const fetchRecentResponses = async (): Promise<AdminResponseRow[]> =>
 		.orderBy(desc(pollResponsesTable.created_at))
 		.limit(RECENT_RESPONSES);
 
-export const fetchUsersWithActiveRun = async (): Promise<AdminUserRow[]> =>
-	db
+const hasEmail = <Row extends { readonly email: string | null }>(
+	row: Row
+): row is Row & { readonly email: string } => row.email !== null;
+
+export const fetchUsersWithActiveRun = async (): Promise<AdminUserRow[]> => {
+	const rows = await db
 		.select({
 			id: usersTable.id,
 			displayName: usersTable.display_name,
@@ -96,6 +100,8 @@ export const fetchUsersWithActiveRun = async (): Promise<AdminUserRow[]> =>
 			and(eq(runsTable.user_id, usersTable.id), eq(runsTable.status, "active"))
 		)
 		.orderBy(desc(usersTable.total_polls_submitted));
+	return rows.filter(hasEmail);
+};
 
 export const countActiveRuns = async (): Promise<number> => {
 	const [row] = await db
@@ -303,8 +309,8 @@ export const fetchPollPool = async (): Promise<AdminPollPoolRow[]> =>
 
 export const fetchDormantUsers = async (
 	seenBefore: Date
-): Promise<AdminDormantRow[]> =>
-	db
+): Promise<AdminDormantRow[]> => {
+	const rows = await db
 		.select({
 			id: usersTable.id,
 			displayName: usersTable.display_name,
@@ -324,3 +330,5 @@ export const fetchDormantUsers = async (
 		)
 		.orderBy(sql`${usersTable.last_seen_at} desc nulls last`)
 		.limit(DORMANT_SHOWN);
+	return rows.filter(hasEmail);
+};

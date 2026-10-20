@@ -47,6 +47,15 @@ export const signupFn = createServerFn({ method: "POST" })
 		});
 	});
 
+export const playAsGuestFn = createServerFn({ method: "POST" }).handler(
+	async () => {
+		const supabase = getSupabaseServerClient();
+		const { error } = await supabase.auth.signInAnonymously();
+		if (error) return { error: true, message: error.message };
+		return { error: false };
+	}
+);
+
 export const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	try {
 		const supabase = getSupabaseServerClient();
@@ -57,13 +66,17 @@ export const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 			return null;
 		}
 
-		if (!data.user?.email) return null;
+		if (!data.user) return null;
+
+		const isGuest = data.user.is_anonymous === true;
+		if (!isGuest && !data.user.email) return null;
 
 		identifyUser(data.user.id);
 
 		return await ensureUserExists({
 			id: data.user.id,
-			email: data.user.email,
+			email: data.user.email ?? null,
+			isGuest,
 			displayName:
 				data.user.user_metadata?.display_name ||
 				data.user.user_metadata?.full_name,

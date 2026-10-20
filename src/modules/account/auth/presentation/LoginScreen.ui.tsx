@@ -24,6 +24,8 @@ export const COPY = {
 	question: "How far can you run?",
 	github: "Continue with GitHub",
 	githubPending: "Redirecting…",
+	guest: "Play today without an account",
+	guestPending: "Starting…",
 	wiki: "Read how this game works",
 	coverage: "coverage",
 	method: "Sign in with",
@@ -60,7 +62,7 @@ const CARD_COUNTER = "ml-auto";
 const CARD_FOOTER = "flex w-full items-center gap-3";
 const FOOTER_BAR = "min-w-0 grow";
 
-export type GithubPressProps = { pending: boolean; onPress: () => void };
+export type PendingPress = { pending: boolean; onPress: () => void };
 
 export type DevSignIn = {
 	method: SignInMethod;
@@ -72,7 +74,8 @@ export type LoginScreenProps = {
 	theme: KantoColor;
 	hero: LoginHero;
 	card: LoginDemoCard;
-	github: GithubPressProps;
+	github: PendingPress;
+	guest: PendingPress;
 	wikiHref: string;
 	devSignIn?: DevSignIn;
 };
@@ -87,6 +90,17 @@ const GithubPress = ({ github }: Pick<LoginScreenProps, "github">) => (
 		label={github.pending ? COPY.githubPending : COPY.github}
 		disabled={github.pending}
 		onPress={github.onPress}
+	/>
+);
+
+const GuestPress = ({ guest }: Pick<LoginScreenProps, "guest">) => (
+	<Button
+		size="lg"
+		width="fill"
+		tone="ambient"
+		label={guest.pending ? COPY.guestPending : COPY.guest}
+		disabled={guest.pending}
+		onPress={guest.onPress}
 	/>
 );
 
@@ -116,9 +130,13 @@ const DevCorner = ({ devSignIn }: { devSignIn: DevSignIn }) => (
 const Hero = ({
 	hero,
 	github,
+	guest,
 	wikiHref,
 	devSignIn,
-}: Pick<LoginScreenProps, "hero" | "github" | "wikiHref" | "devSignIn">) => (
+}: Pick<
+	LoginScreenProps,
+	"hero" | "github" | "guest" | "wikiHref" | "devSignIn"
+>) => (
 	<div className={HERO}>
 		<h1 className={HEADLINE}>
 			{COPY.headline}
@@ -135,6 +153,7 @@ const Hero = ({
 		</div>
 		<div className={PRESS}>
 			<SignIn github={github} devSignIn={devSignIn} />
+			<GuestPress guest={guest} />
 			<div className={UNDER_PRESS}>
 				<Typography variant="caption">
 					<Link href={wikiHref}>{COPY.wiki}</Link>
@@ -183,6 +202,7 @@ export const LoginScreen = ({
 	hero,
 	card,
 	github,
+	guest,
 	wikiHref,
 	devSignIn,
 }: LoginScreenProps) => (
@@ -191,6 +211,7 @@ export const LoginScreen = ({
 			<Hero
 				hero={hero}
 				github={github}
+				guest={guest}
 				wikiHref={wikiHref}
 				devSignIn={devSignIn}
 			/>

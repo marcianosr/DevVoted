@@ -19,6 +19,13 @@ const BANJO = {
 	email: "banjo@rareware.com",
 	displayName: "Banjo Bear",
 	photoUrl: "https://example.com/banjo.jpg",
+	isGuest: false,
+};
+
+const GRUNTY_IN_DISGUISE = {
+	id: "grunty-guest-456",
+	email: null,
+	isGuest: true,
 };
 
 describe("ensureUserExists", () => {
@@ -58,6 +65,15 @@ describe("ensureUserExists", () => {
 		vi.mocked(repository.findUserByEmail).mockResolvedValue(undefined);
 
 		await expect(ensureUserExists(BANJO)).rejects.toThrow(outage);
+	});
+
+	it("rethrows a failed guest insert without an email lookup, since a guest has no email", async () => {
+		const outage = new Error("connection terminated");
+		vi.mocked(repository.findUserById).mockResolvedValue(undefined);
+		vi.mocked(repository.insertUser).mockRejectedValue(outage);
+
+		await expect(ensureUserExists(GRUNTY_IN_DISGUISE)).rejects.toThrow(outage);
+		expect(repository.findUserByEmail).not.toHaveBeenCalled();
 	});
 });
 

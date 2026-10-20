@@ -79,6 +79,7 @@ const seedPlayers = async (): Promise<number> => {
 			id: player.id,
 			email: player.email,
 			displayName: player.displayName,
+			isGuest: false,
 		});
 
 		await db

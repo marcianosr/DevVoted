@@ -7,10 +7,13 @@ import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model"
 
 export type AccountUser = {
 	id: string;
-	email: string;
+	email: string | null;
 	displayName?: string;
 	photoUrl?: string | null;
+	isGuest: boolean;
 };
+
+const GUEST_DISPLAY_NAME = "Guest";
 
 type UserRow = typeof usersTable.$inferSelect;
 
@@ -19,6 +22,7 @@ const toAccountUser = (row: UserRow): AccountUser => ({
 	email: row.email,
 	displayName: row.display_name ?? undefined,
 	photoUrl: row.photo_url,
+	isGuest: row.is_guest,
 });
 
 export const findUserById = async (
@@ -43,14 +47,18 @@ export const findUserByEmail = async (
 	return row ? toAccountUser(row) : undefined;
 };
 
+const displayNameFor = (user: AccountUser): string =>
+	user.displayName || user.email?.split("@")[0] || GUEST_DISPLAY_NAME;
+
 export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 	db.transaction(async (tx) => {
 		const [row] = await tx
 			.insert(usersTable)
 			.values({
 				id: user.id,
-				display_name: user.displayName || user.email.split("@")[0],
+				display_name: displayNameFor(user),
 				email: user.email,
+				is_guest: user.isGuest,
 				photo_url: user.photoUrl || null,
 				role: "user" as const,
 			})

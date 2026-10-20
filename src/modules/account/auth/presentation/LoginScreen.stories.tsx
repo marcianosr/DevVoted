@@ -18,6 +18,7 @@ const meta: Meta<typeof LoginScreen> = {
 		hero: heroFor(),
 		card: demoCardFor(FIRST_STEP),
 		github: { pending: false, onPress: noop },
+		guest: { pending: false, onPress: noop },
 		wikiHref: "/wiki",
 	},
 };
@@ -45,6 +46,10 @@ export const Reduced: Story = {
 
 export const Redirecting: Story = {
 	args: { github: { pending: true, onPress: noop } },
+};
+
+export const StartingAsGuest: Story = {
+	args: { guest: { pending: true, onPress: noop } },
 };
 
 export const Phone: Story = {

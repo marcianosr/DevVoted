@@ -53,7 +53,7 @@ export const Nav = ({ user, published }: NavProps) => {
 		user === null
 			? undefined
 			: {
-					name: user.displayName || user.email,
+					name: user.displayName || user.email || "",
 					photoUrl: user.photoUrl ?? undefined,
 					borderUrl:
 						borderUrlOf(archive.view?.equippedBorderId ?? null) ?? undefined,

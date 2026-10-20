@@ -27,6 +27,15 @@ const insertedRow = {
 	email: "red@pallet.town",
 	display_name: "Red",
 	photo_url: null,
+	is_guest: false,
+};
+
+const insertedGuestRow = {
+	id: "missingno-from-cinnabar",
+	email: null,
+	display_name: "Guest",
+	photo_url: null,
+	is_guest: true,
 };
 
 describe("insertUser", () => {
@@ -38,7 +47,11 @@ describe("insertUser", () => {
 	it("seeds the free starter set with no provenance beside the account row", async () => {
 		mock.results.push([insertedRow]);
 
-		await insertUser({ id: "red-from-pallet-town", email: "red@pallet.town" });
+		await insertUser({
+			id: "red-from-pallet-town",
+			email: "red@pallet.town",
+			isGuest: false,
+		});
 
 		expect(mock.insertTables[0]).toBe(usersTable);
 		expect(mock.insertTables[1]).toBe(userConfigUnlocksTable);
@@ -58,6 +71,7 @@ describe("insertUser", () => {
 			id: "red-from-pallet-town",
 			email: "red@pallet.town",
 			displayName: "Red",
+			isGuest: false,
 		});
 
 		expect(user).toEqual({
@@ -65,14 +79,48 @@ describe("insertUser", () => {
 			email: "red@pallet.town",
 			displayName: "Red",
 			photoUrl: null,
+			isGuest: false,
 		});
 	});
 
 	it("falls back to the email's local part when no display name is given", async () => {
 		mock.results.push([insertedRow]);
 
-		await insertUser({ id: "red-from-pallet-town", email: "red@pallet.town" });
+		await insertUser({
+			id: "red-from-pallet-town",
+			email: "red@pallet.town",
+			isGuest: false,
+		});
 
 		expect(mock.valuesCalls[0]).toMatchObject({ display_name: "red" });
+	});
+
+	it("stores a guest with no email, the guest flag and the guest name", async () => {
+		mock.results.push([insertedGuestRow]);
+
+		await insertUser({
+			id: "missingno-from-cinnabar",
+			email: null,
+			isGuest: true,
+		});
+
+		expect(mock.valuesCalls[0]).toMatchObject({
+			email: null,
+			display_name: "Guest",
+			is_guest: true,
+		});
+	});
+
+	it("seeds a guest the same free starter set as an account", async () => {
+		mock.results.push([insertedGuestRow]);
+
+		await insertUser({
+			id: "missingno-from-cinnabar",
+			email: null,
+			isGuest: true,
+		});
+
+		expect(mock.insertTables[1]).toBe(userConfigUnlocksTable);
+		expect(mock.valuesCalls[1]).toHaveLength(FREE_CONFIG_IDS.length);
 	});
 });
