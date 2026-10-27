@@ -1523,6 +1523,17 @@ your own page and on a visitor's alike. The card the climb map opens is drawn fr
 the ladder, so on open it fetches the same player card the hover reads and borrows
 its strip and swatches.
 
+### 6.8 Playing as a guest
+
+A visitor can press **Play today without an account** on the home page and play
+today's five without signing in (ADR-178). The guest gets one real run, stored on the
+server, that climbs gate by gate across days on the same browser. A guest cannot
+abandon that run or start another, cannot suggest polls, and has no profile, Dex or
+look to change. Those pages offer sign-in instead.
+
+A guest's run earns swatches, titles, unlocks and archived storage like anyone's,
+but none of it is kept on the account.
+
 ---
 
 ## 7. Community

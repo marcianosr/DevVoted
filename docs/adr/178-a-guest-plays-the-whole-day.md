@@ -43,6 +43,10 @@ Amended 2026-10-08: the community header counts guests apart from account
 holders, as **2 players · 45 guest players**, and omits the guest figure when it is
 zero. Faces, records, turnout rows and hover cards stay account-only.
 
+Amended 2026-10-21: a guest's run earns swatches, titles, config and service
+unlocks and archive like anyone's, and the run shows them, but none of it is
+stored on the account. Linking keeps the run, not what it earned before the link.
+
 ## Decision 4: the guest run lives on the server
 
 "Keep the guest's run on this device" means an anonymous Supabase session, not a

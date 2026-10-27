@@ -259,7 +259,8 @@ const finishSessionRun = async (
 	tx: Tx,
 	runId: number,
 	userId: string,
-	state: RunState
+	state: RunState,
+	keepsRewards: boolean
 ): Promise<void> => {
 	const reason = state.status === "won" ? "victory" : "dead";
 	const wonAt =
@@ -273,6 +274,7 @@ const finishSessionRun = async (
 			...wonAt,
 		})
 		.where(eq(runsTable.id, runId));
+	if (!keepsRewards) return;
 
 	const creditBytes = archiveCreditBytes(state);
 	const credit =
@@ -400,7 +402,9 @@ export const applyActionToRun = async (args: {
 	today: string;
 	action: RunAction;
 	settle?: RunSettlement;
+	isGuest: boolean;
 }): Promise<RunDispatchResult> => {
+	const keepsRewards = !args.isGuest;
 	await getOrCreateDailyRunSeed(args.today);
 	return db.transaction(async (tx) => {
 		const [stateRow] = await tx
@@ -428,7 +432,7 @@ export const applyActionToRun = async (args: {
 
 		const touched = objectiveIncrementsFor(state, next, args.action);
 		const unlockedConfigIds =
-			touched.length === 0
+			touched.length === 0 || !keepsRewards
 				? []
 				: await applyObjectiveGrants(tx, args.userId, touched);
 
@@ -461,10 +465,11 @@ export const applyActionToRun = async (args: {
 		const settled =
 			args.settle === undefined ? next : await args.settle(tx, state, next);
 		const grants = accountGrantsOf(state, settled);
-		await applyAccountGrants(tx, args.userId, grants);
-		const earnedTitleIds = grants.titlesDue
-			? await grantEarnedTitles(tx, args.userId)
-			: [];
+		if (keepsRewards) await applyAccountGrants(tx, args.userId, grants);
+		const earnedTitleIds =
+			grants.titlesDue && keepsRewards
+				? await grantEarnedTitles(tx, args.userId)
+				: [];
 		const recorded = recordGains(state, settled, args.today, {
 			unlockedConfigIds,
 			earnedTitleIds,
@@ -482,7 +487,13 @@ export const applyActionToRun = async (args: {
 			.where(eq(runStatesTable.run_id, args.runId));
 
 		if (isRunOver(settled.status)) {
-			await finishSessionRun(tx, args.runId, args.userId, settled);
+			await finishSessionRun(
+				tx,
+				args.runId,
+				args.userId,
+				settled,
+				keepsRewards
+			);
 		}
 
 		return { state: recorded, unlockedConfigIds, earnedTitleIds };

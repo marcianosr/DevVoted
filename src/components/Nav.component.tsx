@@ -50,7 +50,7 @@ export const Nav = ({ user, published }: NavProps) => {
 	const titles = useTitleState(user?.id);
 
 	const viewer: NavViewer | undefined =
-		user === null
+		user === null || user.isGuest
 			? undefined
 			: {
 					name: user.displayName || user.email || "",

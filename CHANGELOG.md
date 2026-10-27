@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Play today without an account.** The home page has a press that starts today's five right away, no sign-in needed. Your run keeps climbing gate by gate on the same browser. Sign in to keep what the run earns, start more runs and get a profile.
+- **The home page shows a pairs poll.** The poll card that plays itself on the home page now includes a pairs poll, linking each status code to its meaning.
 
 ## 2.6.5 - 2026-10-20
 ### Changed

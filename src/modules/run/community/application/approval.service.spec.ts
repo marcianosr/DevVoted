@@ -153,12 +153,17 @@ describe("submitCrowdPickService", () => {
 			picksByOptionId: { 1001: 8, 1002: 2 },
 		});
 
-		await submitCrowdPickService({ userId: VIEWER, date: TODAY });
+		await submitCrowdPickService({
+			isGuest: false,
+			userId: VIEWER,
+			date: TODAY,
+		});
 
 		expect(runService.dispatchRunActionService).toHaveBeenCalledWith({
 			userId: VIEWER,
 			date: TODAY,
 			action: { type: "answer", optionIds: ["1001"] },
+			isGuest: false,
 		});
 	});
 
@@ -166,6 +171,7 @@ describe("submitCrowdPickService", () => {
 		vi.mocked(runQueries.loadRunState).mockResolvedValue(answering());
 
 		const result = await submitCrowdPickService({
+			isGuest: false,
 			userId: VIEWER,
 			date: TODAY,
 		});
@@ -179,6 +185,7 @@ describe("submitCrowdPickService", () => {
 		vi.mocked(runQueries.loadRunState).mockResolvedValue(answering("102"));
 
 		const result = await submitCrowdPickService({
+			isGuest: false,
 			userId: VIEWER,
 			date: TODAY,
 		});
@@ -195,6 +202,7 @@ describe("submitCrowdPickService", () => {
 		});
 
 		const result = await submitCrowdPickService({
+			isGuest: false,
 			userId: VIEWER,
 			date: TODAY,
 		});

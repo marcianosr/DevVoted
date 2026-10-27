@@ -80,6 +80,7 @@ export const lootFallenRunService = async (args: {
 	userId: string;
 	date: string;
 	fallenRunId: number;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> => {
 	const take = await handleApiOperation(() => spoils(args), "lootFallenRun");
 	if (!take.success) return take;
@@ -89,5 +90,6 @@ export const lootFallenRunService = async (args: {
 		date: args.date,
 		action: { type: "loot", kb: take.data },
 		settle: claiming(args.userId, args.date, args.fallenRunId, take.data),
+		isGuest: args.isGuest,
 	});
 };

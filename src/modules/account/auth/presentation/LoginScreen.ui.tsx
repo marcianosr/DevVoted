@@ -75,14 +75,14 @@ export type LoginScreenProps = {
 	hero: LoginHero;
 	card: LoginDemoCard;
 	github: PendingPress;
-	guest: PendingPress;
+	guest?: PendingPress;
 	wikiHref: string;
 	devSignIn?: DevSignIn;
 };
 
 const GithubPress = ({ github }: Pick<LoginScreenProps, "github">) => (
 	<Button
-		size="xl"
+		size="lg"
 		width="fill"
 		tone="primary"
 		icon="github"
@@ -93,11 +93,11 @@ const GithubPress = ({ github }: Pick<LoginScreenProps, "github">) => (
 	/>
 );
 
-const GuestPress = ({ guest }: Pick<LoginScreenProps, "guest">) => (
+const GuestPress = ({ guest }: { guest: PendingPress }) => (
 	<Button
 		size="lg"
 		width="fill"
-		tone="ambient"
+		tone="action"
 		label={guest.pending ? COPY.guestPending : COPY.guest}
 		disabled={guest.pending}
 		onPress={guest.onPress}
@@ -153,7 +153,7 @@ const Hero = ({
 		</div>
 		<div className={PRESS}>
 			<SignIn github={github} devSignIn={devSignIn} />
-			<GuestPress guest={guest} />
+			{guest === undefined ? null : <GuestPress guest={guest} />}
 			<div className={UNDER_PRESS}>
 				<Typography variant="caption">
 					<Link href={wikiHref}>{COPY.wiki}</Link>
@@ -178,10 +178,11 @@ const DemoCard = ({ card }: Pick<LoginScreenProps, "card">) => (
 		</div>
 		<Panel.Body>
 			<Question
-				answerType="single"
+				answerType={card.answerType}
 				question={card.question}
 				options={card.options}
 				pickedIds={card.pickedIds}
+				pairs={card.pairs}
 			/>
 		</Panel.Body>
 		<Panel.Footer>

@@ -79,6 +79,7 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 
 const take = () =>
 	lootFallenRunService({
+		isGuest: false,
 		userId: MISTY,
 		date: DATE,
 		fallenRunId: FALLEN_RUN_ID,

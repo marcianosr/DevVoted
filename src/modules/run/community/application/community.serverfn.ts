@@ -52,17 +52,18 @@ export const getApprovalSlots = createServerFn({ method: "GET" }).handler(
 
 export const submitCrowdPick = createServerFn({ method: "POST" }).handler(
 	async () =>
-		withAuthenticatedUser(({ userId }) =>
-			submitCrowdPickService({ userId, date: getTodayDateString() })
+		withAuthenticatedUser(({ userId, isGuest }) =>
+			submitCrowdPickService({ userId, date: getTodayDateString(), isGuest })
 		)
 );
 
 export const lootFallenRun = createServerFn({ method: "POST" })
 	.validator(z.object({ runId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
+		withAuthenticatedUser(({ userId, isGuest }) =>
 			lootFallenRunService({
 				userId,
+				isGuest,
 				date: getTodayDateString(),
 				fallenRunId: data.runId,
 			})

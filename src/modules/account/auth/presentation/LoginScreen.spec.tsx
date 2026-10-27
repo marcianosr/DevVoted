@@ -64,6 +64,14 @@ describe("LoginScreen", () => {
 		expect(onPress).toHaveBeenCalledOnce();
 	});
 
+	it("leaves out the guest press for a visitor who already plays as a guest", () => {
+		render(<LoginScreen {...BASE} guest={undefined} />);
+
+		expect(
+			screen.queryByRole("button", { name: "Play today without an account" })
+		).not.toBeInTheDocument();
+	});
+
 	it("disables the guest press and reads Starting while the guest session opens", () => {
 		render(
 			<LoginScreen {...BASE} guest={{ pending: true, onPress: vi.fn() }} />

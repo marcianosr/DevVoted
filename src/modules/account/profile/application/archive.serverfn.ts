@@ -5,7 +5,10 @@ import {
 	getArchiveStateService,
 	purchaseBorderService,
 } from "~/modules/account/profile/application/archive.service";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import {
+	withAuthenticatedUser,
+	withMemberUser,
+} from "~/shared/utils/authorization";
 
 export const getArchiveState = createServerFn({ method: "GET" }).handler(() =>
 	withAuthenticatedUser(({ userId }) => getArchiveStateService(userId))
@@ -14,7 +17,5 @@ export const getArchiveState = createServerFn({ method: "GET" }).handler(() =>
 export const purchaseBorder = createServerFn({ method: "POST" })
 	.validator(z.object({ borderId: z.string().min(1) }))
 	.handler(({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
-			purchaseBorderService(userId, data.borderId)
-		)
+		withMemberUser(({ userId }) => purchaseBorderService(userId, data.borderId))
 	);

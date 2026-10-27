@@ -5,6 +5,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { WIKI_PATH } from "~/shared/lib/wikiPath";
+import { useViewer } from "~/modules/account/auth/application/useViewer.hook";
 import { getSupabaseBrowserClient } from "~/shared/utils/supabaseBrowser";
 
 import {
@@ -44,6 +45,7 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 	const [githubPending, setGithubPending] = useState(false);
 	const [method, setMethod] = useState<SignInMethod>("email");
 	const step = useLoginDemo();
+	const viewer = useViewer();
 
 	const loginMutation = useMutation({
 		mutationFn: loginFn,
@@ -115,10 +117,14 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 			hero={heroFor()}
 			card={demoCardFor(step)}
 			github={{ pending: githubPending, onPress: handleGithubLogin }}
-			guest={{
-				pending: guestMutation.isPending,
-				onPress: () => guestMutation.mutate(),
-			}}
+			guest={
+				viewer?.isGuest
+					? undefined
+					: {
+							pending: guestMutation.isPending,
+							onPress: () => guestMutation.mutate(),
+						}
+			}
 			wikiHref={WIKI_PATH}
 			devSignIn={
 				isDevelopment

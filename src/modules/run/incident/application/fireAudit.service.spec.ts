@@ -65,7 +65,7 @@ const armedAtPrep = (): RunState => {
 };
 
 const fire = (targetRunId: number) =>
-	fireAuditService({ userId: USER, date: DATE, targetRunId });
+	fireAuditService({ isGuest: false, userId: USER, date: DATE, targetRunId });
 
 const offered = async (state: RunState) => {
 	const [offer] = await offersForAttacker(

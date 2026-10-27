@@ -40,6 +40,14 @@ export const SecondPoll: Story = {
 	args: { card: demoCardFor({ poll: 1, phase: "enter" }) },
 };
 
+export const PairsPoll: Story = {
+	args: { card: demoCardFor({ poll: 1, phase: "enter" }) },
+};
+
+export const PairsMatched: Story = {
+	args: { card: demoCardFor({ poll: 1, phase: "picked" }) },
+};
+
 export const Reduced: Story = {
 	args: { card: demoCardFor(SETTLED_STEP) },
 };

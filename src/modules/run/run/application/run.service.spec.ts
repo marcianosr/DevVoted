@@ -16,6 +16,7 @@ import {
 	getPollsLeftTodayService,
 	getRunRecapService,
 	getTodaysRunService,
+	GUEST_HAS_ONE_RUN,
 	startRunService,
 } from "~/modules/run/run/application/run.service";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
@@ -29,6 +30,7 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
 	applyActionToRun: vi.fn(),
 	consumePinnedGate: vi.fn().mockResolvedValue(0),
+	countSessionRuns: vi.fn().mockResolvedValue(0),
 	createSessionRunWithState: vi.fn(),
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),
@@ -289,6 +291,76 @@ describe("startRunService", () => {
 		vi.clearAllMocks();
 	});
 
+	it("opens a guest's first run like anyone's", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.countSessionRuns).mockResolvedValue(0);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 64,
+		});
+
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: true,
+		});
+
+		expect(result.success).toBe(true);
+		expect(queries.createSessionRunWithState).toHaveBeenCalled();
+	});
+
+	it("refuses a guest a second run once their one run has ended", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.countSessionRuns).mockResolvedValue(1);
+
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: true,
+		});
+
+		expect(result).toEqual({ success: false, error: GUEST_HAS_ONE_RUN });
+		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
+	});
+
+	it("resumes a guest's run in progress", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
+			toRunSnapshot(configuringState())
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
+
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: true,
+		});
+
+		expect(result.success).toBe(true);
+		expect(queries.countSessionRuns).not.toHaveBeenCalled();
+	});
+
+	it("lets an account start another run after one ended", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.countSessionRuns).mockResolvedValue(3);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 64,
+		});
+
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
+
+		expect(result.success).toBe(true);
+	});
+
 	it("resumes the run in progress instead of starting a new one", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 			sessionRunRecord()
@@ -298,7 +370,11 @@ describe("startRunService", () => {
 		);
 		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		expect(queries.ensureTodaysSegment).toHaveBeenCalledWith(64, DATE);
@@ -313,7 +389,11 @@ describe("startRunService", () => {
 			runId: 64,
 		});
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.status).toBe("configuring");
@@ -340,7 +420,11 @@ describe("startRunService", () => {
 			"extend",
 		]);
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
@@ -359,7 +443,11 @@ describe("startRunService", () => {
 			runId: 65,
 		});
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.status).toBe("configuring");
@@ -380,7 +468,11 @@ describe("startRunService", () => {
 			runId: 66,
 		});
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
@@ -403,7 +495,7 @@ describe("startRunService", () => {
 			runId: 67,
 		});
 
-		await startRunService({ userId: USER, date: DATE });
+		await startRunService({ userId: USER, date: DATE, isGuest: false });
 
 		expect(queries.consumePinnedGate).toHaveBeenCalledWith(USER);
 		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
@@ -421,7 +513,7 @@ describe("startRunService", () => {
 			runId: 68,
 		});
 
-		await startRunService({ userId: USER, date: DATE });
+		await startRunService({ userId: USER, date: DATE, isGuest: false });
 
 		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
 			USER,
@@ -440,7 +532,11 @@ describe("startRunService", () => {
 			runId: 69,
 		});
 
-		const result = await startRunService({ userId: USER, date: DATE });
+		const result = await startRunService({
+			userId: USER,
+			date: DATE,
+			isGuest: false,
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.pollsExhausted).toBe(true);
@@ -487,6 +583,7 @@ describe("dispatchRunActionService", () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 
 		const result = await dispatchRunActionService({
+			isGuest: false,
 			userId: USER,
 			date: DATE,
 			action: { type: "start" },
@@ -507,6 +604,7 @@ describe("dispatchRunActionService", () => {
 		});
 
 		const result = await dispatchRunActionService({
+			isGuest: false,
 			userId: USER,
 			date: DATE,
 			action: { type: "start" },
@@ -520,6 +618,7 @@ describe("dispatchRunActionService", () => {
 			today: DATE,
 			action: { type: "start" },
 			settle: expect.any(Function),
+			isGuest: false,
 		});
 	});
 
@@ -534,6 +633,7 @@ describe("dispatchRunActionService", () => {
 		});
 
 		const result = await dispatchRunActionService({
+			isGuest: false,
 			userId: USER,
 			date: DATE,
 			action: { type: "start" },
@@ -560,6 +660,7 @@ describe("dispatchRunActionService", () => {
 		]);
 
 		const result = await dispatchRunActionService({
+			isGuest: false,
 			userId: USER,
 			date: DATE,
 			action: { type: "peek-poll" },
@@ -589,6 +690,7 @@ describe("dispatchRunActionService", () => {
 		]);
 
 		const result = await dispatchRunActionService({
+			isGuest: false,
 			userId: USER,
 			date: DATE,
 			action: { type: "peek-poll" },

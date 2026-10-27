@@ -185,12 +185,21 @@ export const getPollsLeftTodayService = async ({
 		"getPollsLeftToday"
 	);
 
+export const GUEST_HAS_ONE_RUN = "Sign in to start another run";
+
+const hasHadARun = async (userId: string): Promise<boolean> =>
+	(await countSessionRuns(userId)) > 0;
+
 const openTodaysRun = async (
 	userId: string,
-	date: string
+	date: string,
+	isGuest: boolean
 ): Promise<RunView> => {
 	const active = await findResumableRun(userId);
 	if (active) return continueActiveRun(active, date);
+	if (isGuest && (await hasHadARun(userId))) {
+		throw new Error(GUEST_HAS_ONE_RUN);
+	}
 
 	const polls = await pollsLeftForNewRun(userId, date);
 
@@ -220,11 +229,13 @@ const openTodaysRun = async (
 export const startRunService = async ({
 	userId,
 	date,
+	isGuest,
 }: {
 	userId: string;
 	date: string;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> =>
-	handleApiOperation(() => openTodaysRun(userId, date), "startRun");
+	handleApiOperation(() => openTodaysRun(userId, date, isGuest), "startRun");
 
 export const getRunRecapService = async ({
 	userId,
@@ -259,11 +270,13 @@ export const dispatchRunActionService = async ({
 	date,
 	action,
 	settle,
+	isGuest,
 }: {
 	userId: string;
 	date: string;
 	action: RunAction;
 	settle?: (runId: number) => RunSettlement;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> =>
 	handleApiOperation(async () => {
 		const run = await findActiveSessionRun(userId);
@@ -279,6 +292,7 @@ export const dispatchRunActionService = async ({
 			today: date,
 			action,
 			settle: settle?.(run.id) ?? settleIncidents(run.id, date),
+			isGuest,
 		});
 		const [unlockedThisRun, accountReads, unlockedServiceIds, dealtTomorrow] =
 			await Promise.all([

@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { getTodayDateString } from "~/shared/lib/dateUtils";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import {
+	withAuthenticatedUser,
+	withMemberUser,
+} from "~/shared/utils/authorization";
 
 import {
 	runActionSchema,
@@ -35,28 +38,34 @@ export const getPollsLeftToday = createServerFn({ method: "GET" }).handler(
 );
 
 export const startRun = createServerFn({ method: "POST" }).handler(async () =>
-	withAuthenticatedUser(({ userId }) =>
-		startRunService({ userId, date: getTodayDateString() })
+	withAuthenticatedUser(({ userId, isGuest }) =>
+		startRunService({ userId, date: getTodayDateString(), isGuest })
 	)
 );
 
 export const warmBootRun = createServerFn({ method: "POST" })
 	.validator(warmBootPickSchema)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
-			warmBootRunService({ userId, date: getTodayDateString(), pick: data })
+		withAuthenticatedUser(({ userId, isGuest }) =>
+			warmBootRunService({
+				userId,
+				isGuest,
+				date: getTodayDateString(),
+				pick: data,
+			})
 		)
 	);
 
 export const abandonRun = createServerFn({ method: "POST" }).handler(async () =>
-	withAuthenticatedUser(({ userId }) => abandonRunService({ userId }))
+	withMemberUser(({ userId }) => abandonRunService({ userId }))
 );
 
 export const dispatchRunAction = createServerFn({ method: "POST" })
 	.validator(z.object({ action: runActionSchema }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
+		withAuthenticatedUser(({ userId, isGuest }) =>
 			dispatchRunActionService({
+				isGuest,
 				userId,
 				date: getTodayDateString(),
 				action: data.action,

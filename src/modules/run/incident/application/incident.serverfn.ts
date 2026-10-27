@@ -16,8 +16,13 @@ export const getAttackTargets = createServerFn({ method: "GET" }).handler(
 export const fireAudit = createServerFn({ method: "POST" })
 	.validator(fireAuditSchema)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
-			fireAuditService({ userId, date: getTodayDateString(), ...data })
+		withAuthenticatedUser(({ userId, isGuest }) =>
+			fireAuditService({
+				userId,
+				isGuest,
+				date: getTodayDateString(),
+				...data,
+			})
 		)
 	);
 

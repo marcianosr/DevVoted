@@ -4,6 +4,7 @@ import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
 import {
 	withAdminUser,
 	withAuthenticatedUser,
+	withMemberUser,
 } from "~/shared/utils/authorization";
 import { reportHandledFailure } from "~/shared/utils/errorReporting";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
@@ -35,6 +36,14 @@ const signedInAs = (id: string, email?: string) =>
 			clientWith(async () => ({ data: { user: { id, email } }, error: null }))
 		);
 
+const signedInAsGuest = (id: string) =>
+	vi.mocked(getSupabaseServerClient).mockReturnValue(
+		clientWith(async () => ({
+			data: { user: { id, is_anonymous: true } },
+			error: null,
+		}))
+	);
+
 const signedOut = () =>
 	vi.mocked(getSupabaseServerClient).mockReturnValue(
 		clientWith(async () => ({
@@ -61,8 +70,19 @@ describe("withAuthenticatedUser", () => {
 
 		expect(result).toEqual({
 			success: true,
-			data: { userId: brock.name, isAdmin: false },
+			data: { userId: brock.name, isAdmin: false, isGuest: false },
 		});
+	});
+
+	it("marks an anonymous session as a guest and runs the operation for it", async () => {
+		signedInAsGuest(brock.name);
+
+		const result = await withAuthenticatedUser(async (session) => ({
+			success: true as const,
+			data: session.isGuest,
+		}));
+
+		expect(result).toEqual({ success: true, data: true });
 	});
 
 	it("marks an allowlisted address as admin inside the session", async () => {
@@ -140,6 +160,41 @@ describe("withAdminUser", () => {
 		signedOut();
 
 		expect(await withAdminUser(vi.fn())).toEqual({
+			success: false,
+			error: "Not authenticated",
+		});
+	});
+});
+
+describe("withMemberUser", () => {
+	it("refuses a guest before running anything", async () => {
+		signedInAsGuest(brock.name);
+		const operation = vi.fn();
+
+		const result = await withMemberUser(operation);
+
+		expect(result).toEqual({
+			success: false,
+			error: "Sign in to keep this",
+		});
+		expect(operation).not.toHaveBeenCalled();
+	});
+
+	it("runs for a signed-in account", async () => {
+		signedInAs(brock.name, "brock@pewter.gym");
+
+		const result = await withMemberUser(async ({ userId }) => ({
+			success: true as const,
+			data: userId,
+		}));
+
+		expect(result).toEqual({ success: true, data: brock.name });
+	});
+
+	it("refuses a signed-out request the same way any session read does", async () => {
+		signedOut();
+
+		expect(await withMemberUser(vi.fn())).toEqual({
 			success: false,
 			error: "Not authenticated",
 		});
