@@ -60,6 +60,7 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 	build: { configs: [] },
 	closingBand: null,
 	startedAtGate: 0,
+	lastPlayedOn: null,
 	handle: null,
 	titles: [],
 	theme: "gate-pallet",

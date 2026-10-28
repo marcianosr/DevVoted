@@ -184,13 +184,25 @@ describe("showedUpBand", () => {
 describe("statsFor", () => {
 	it("counts the guests apart from the players", () => {
 		expect(
-			statsFor({ totalPlayers: 47, guestPlayers: 45 }).map((stat) => stat.label)
+			statsFor({ totalPlayers: 47, guestPlayers: 45, restingPlayers: 0 }).map(
+				(stat) => stat.label
+			)
 		).toEqual(["47 players", "45 guests"]);
 	});
 
 	it("leaves the guest figure out when nobody played without an account", () => {
 		expect(
-			statsFor({ totalPlayers: 2, guestPlayers: 0 }).map((stat) => stat.label)
+			statsFor({ totalPlayers: 2, guestPlayers: 0, restingPlayers: 0 }).map(
+				(stat) => stat.label
+			)
 		).toEqual(["2 players"]);
+	});
+
+	it("counts the climbers resting, who have not answered for days", () => {
+		expect(
+			statsFor({ totalPlayers: 5, guestPlayers: 0, restingPlayers: 2 }).map(
+				(stat) => stat.label
+			)
+		).toEqual(["5 players", "2 resting"]);
 	});
 });

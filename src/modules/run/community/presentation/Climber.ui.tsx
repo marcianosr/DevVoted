@@ -46,8 +46,9 @@ const TAG_WORD = "tag";
 const STACK = "flex items-center -space-x-1.5";
 const WRAPPING_STACK = "flex-wrap justify-end gap-y-1";
 const OVERFLOW = "pl-3 text-xs text-theme-muted tabular-nums";
-const MORE =
-	"ml-1.5 cursor-pointer rounded-md px-1.5 py-0.5 text-xs text-theme-muted tabular-nums ring-1 ring-inset ring-theme-faint hover:text-theme-soft focus-visible:outline-2 focus-visible:outline-theme";
+export const MORE_PRESS =
+	"cursor-pointer rounded-md px-1.5 py-0.5 text-xs text-theme-muted tabular-nums ring-1 ring-inset ring-theme-faint hover:text-theme-soft focus-visible:outline-2 focus-visible:outline-theme";
+const MORE = `ml-1.5 ${MORE_PRESS}`;
 const MORE_PANEL =
 	"popover-anchored rounded-xl border border-theme-faint bg-theme-raised p-3 text-xs text-theme-muted shadow-lg";
 const MORE_FACES = "flex max-h-64 max-w-xs flex-wrap gap-1 overflow-y-auto";

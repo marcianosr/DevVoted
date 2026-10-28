@@ -39,6 +39,7 @@ const EMPTY_COMMUNITY: RunCommunityView = {
 	date: "",
 	totalPlayers: 0,
 	guestPlayers: 0,
+	restingPlayers: 0,
 	players: [],
 	leaders: [],
 	polls: [],

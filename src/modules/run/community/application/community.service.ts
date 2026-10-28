@@ -15,6 +15,8 @@ import {
 
 import {
 	type ClimbMarker,
+	idleDaysOf,
+	isRestingClimber,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
 import { lootableKbOf } from "~/modules/run/community/application/loot.service";
@@ -122,6 +124,7 @@ export type ClimbClimber = ClimbMarker & {
 	closingBand?: CoverageBandId;
 	startedAtGate?: number;
 	guest?: boolean;
+	idleDays?: number;
 } & ClimbStanding;
 
 export type ClimbFallen = ClimbMarker &
@@ -159,6 +162,7 @@ export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
 	guestPlayers: number;
+	restingPlayers: number;
 	players: readonly CommunityVoter[];
 	leaders: readonly CategoryBoard[];
 	polls: RunCommunityPoll[];
@@ -283,6 +287,9 @@ const buildPollDetail = (
 	};
 };
 
+const restingPlayersOf = (climb: ClimbTodayView | null): number =>
+	climb === null ? 0 : climb.climbers.filter(isRestingClimber).length;
+
 const EMPTY_VIEW = (
 	date: string,
 	climb: ClimbTodayView | null,
@@ -293,6 +300,7 @@ const EMPTY_VIEW = (
 	date,
 	totalPlayers: players.length,
 	guestPlayers,
+	restingPlayers: restingPlayersOf(climb),
 	players,
 	leaders,
 	polls: [],
@@ -313,6 +321,12 @@ const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
 
 const guestOf = ({ isGuest }: Pick<ClimberRow, "isGuest">) =>
 	isGuest ? { guest: true } : {};
+
+const idleOf = (
+	{ lastPlayedOn }: Pick<ClimberRow, "lastPlayedOn">,
+	date: string
+) =>
+	lastPlayedOn === null ? {} : { idleDays: idleDaysOf(lastPlayedOn, date) };
 
 const closeOf = ({
 	closingBand,
@@ -452,6 +466,7 @@ const buildClimbToday = async ({
 			you: false,
 			build: row.build,
 			...guestOf(row),
+			...idleOf(row, date),
 			...closeOf(row),
 			...standingOf(row, bestCategories.get(row.userId)),
 		}));
@@ -468,6 +483,7 @@ const buildClimbToday = async ({
 			? {}
 			: {
 					build: viewerRow.build,
+					...idleOf(viewerRow, date),
 					...closeOf(viewerRow),
 					...standingOf(viewerRow, bestCategories.get(userId)),
 				}),
@@ -578,6 +594,7 @@ export const getRunCommunityService = async ({
 			date,
 			totalPlayers: players.length,
 			guestPlayers,
+			restingPlayers: restingPlayersOf(climb),
 			players,
 			leaders,
 			polls: views,

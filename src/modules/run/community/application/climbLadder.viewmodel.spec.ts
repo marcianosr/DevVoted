@@ -5,6 +5,7 @@ import {
 	fileOf,
 	LOOT_COPY,
 	ladderFor,
+	REST_COPY,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type {
 	ClimbFallen,
@@ -93,6 +94,29 @@ describe("ladderFor", () => {
 
 		expect(gates[1].climbers.map((entry) => entry.id)).toEqual(["blue", "red"]);
 		expect(gates[3].climbers.map((entry) => entry.id)).toEqual(["green"]);
+	});
+
+	it("stands a resting climber after the active ones, dimmed and dated", () => {
+		const gates = ladderFor({
+			...climb,
+			climbers: [
+				{ ...climber("red", 1, 2, true), idleDays: 0 },
+				{ ...climber("blue", 1, 4), idleDays: 5 },
+				{ ...climber("green", 1, 0), idleDays: 2 },
+			],
+		});
+
+		expect(gates[1].climbers.map((entry) => entry.id)).toEqual([
+			"red",
+			"green",
+			"blue",
+		]);
+		expect(gates[1].climbers[2]).toMatchObject({
+			resting: true,
+			tooltip: REST_COPY.lastPlayed("blue", 5),
+		});
+		expect(gates[1].climbers[1]).not.toHaveProperty("resting");
+		expect(gates[1].climbers[1]).not.toHaveProperty("tooltip");
 	});
 
 	it("marks the viewer's gate as current", () => {

@@ -277,7 +277,7 @@ Code lives in the question: backticks render inline code and a fenced ```js bloc
 renders a highlighted panel; the older separate code block is a legacy column that
 still renders where a poll carries one (ADR-137). Answer types are **single** (pick exactly one), **multiple**
 ("select all that apply") and **pairs** (matching pairs, below). Harder polls pay more coverage
-([2.5](#25-coverage-scoring)). The bank holds ~475 published polls, so a poll you have
+([2.5](#25-coverage-scoring)). The bank holds 500+ published polls, so a poll you have
 seen can reappear in a later seed.
 
 A **matching pairs** poll shows four to six pairs split over two columns (ADR-192, ADR-197); a tile holds at most 30 characters. The left
@@ -1605,9 +1605,15 @@ boards of twelve rows, one row per category, one board showing at a time, picked
 **Where everyone is** is a horizontal track of the 13 numbered gate swatches with each
 live run's avatar chip stacked _beneath_ its gate. Your chip is ringed and titled
 "you", and your current gate draws the swatch's ring; crowded gates fold behind a `+N`
-badge (four chips show). A saffron ★ **your best** sits at the gate of the deepest
+press (four chips show): press it and the column opens to every chip, press **less** and
+it folds again. A run with no session answer for three calendar days (`RESTING_AFTER_DAYS`,
+counted from its latest answer date, or its start day when it never answered) is
+**resting**: its chip is dimmed and greyed like a fallen one, sorted after the chips
+still climbing, and titled with the player's name and the days since they last played;
+the header's stats line counts them as `N resting`. The run itself is unchanged: it never
+expires and waits for its player (ADR-011). A saffron ★ **your best** sits at the gate of the deepest
 point any of your _finished_ runs reached, and gates past your reach are dimmed. A
-legend under the track keys the chips: **you**, **rival**, **fallen**. Beneath a gate's stack, each run the gate killed today is
+legend under the track keys the chips: **you**, **rival**, **fallen**, **resting**. Beneath a gate's stack, each run the gate killed today is
 that player's chip, dimmed and greyed, keyed by run rather than player so two losses in
 one day both show (abandoning is not falling and draws nothing). The track scrolls
 horizontally on narrow screens and centres itself on your column. Gate/poll arithmetic
@@ -1622,8 +1628,7 @@ bar against that gate's unaudited ladder, a pointer marking the reading; then
 **Build**, `used / space` weight, the compact config chips with the vendor-locked one
 badged and the weight still free as a dashed free slot; then three tiles: run storage,
 streak, and the category they have been right in most often, each badged. What a run knows that you
-do not stays private (ADR-101 §2, narrowed 2026-09-26). 🟡 Climbers folded behind `+N`
-have no chip to press.
+do not stays private (ADR-101 §2, narrowed 2026-09-26).
 
 **Today's polls** spotlights two of the day's revealed polls as a teaser: the one that
 **tripped up most players** (lowest share who got it right) and the one **almost everyone

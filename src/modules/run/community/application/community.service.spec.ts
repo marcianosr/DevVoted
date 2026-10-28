@@ -177,6 +177,7 @@ const standing = (
 	auditSchedule: {},
 	warmBootKb: 0,
 	isGuest: false,
+	lastPlayedOn: DATE,
 	...over,
 	...(over.handle === undefined ? {} : { handle: over.handle }),
 });
@@ -565,6 +566,7 @@ describe("getRunCommunityService climb map", () => {
 				gate: 2,
 				pollsIntoGate: 4,
 				you: false,
+				idleDays: 0,
 				build: BARE_BUILD,
 				startedAtGate: 0,
 				coveragePercent: 0,
@@ -581,6 +583,7 @@ describe("getRunCommunityService climb map", () => {
 				gate: 6,
 				pollsIntoGate: 3,
 				you: true,
+				idleDays: 0,
 				build: RED_BUILD,
 				closingBand: "shaky",
 				startedAtGate: 0,
@@ -599,6 +602,7 @@ describe("getRunCommunityService climb map", () => {
 				gate: 7,
 				pollsIntoGate: 1,
 				you: false,
+				idleDays: 0,
 				build: BLUE_BUILD,
 				closingBand: "perfect",
 				startedAtGate: 5,
@@ -1163,6 +1167,26 @@ describe("guests on the board", () => {
 		expect(result.data.players.map((player) => player.displayName)).toContain(
 			GUEST_NAME
 		);
+	});
+
+	it("counts the days since each climber last answered, and who is resting", async () => {
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue([
+			CLIMBERS[0],
+			{ ...CLIMBERS[1], lastPlayedOn: "2026-05-10" },
+			{ ...CLIMBERS[2], lastPlayedOn: null },
+		]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const climbers = result.data.climb?.climbers ?? [];
+		expect(climbers.find((entry) => entry.id === BLUE)?.idleDays).toBe(3);
+		expect(climbers.find((entry) => entry.id === RED)?.idleDays).toBe(0);
+		expect(climbers.find((entry) => entry.id === GREEN)).not.toHaveProperty(
+			"idleDays"
+		);
+		expect(result.data.restingPlayers).toBe(1);
 	});
 
 	it("marks a guest climber and a guest's fallen run, and nobody else", async () => {

@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "~/database/db";
 import {
+	pollResponsesTable,
 	runStatesTable,
 	runsTable,
 	userObjectiveProgressTable,
@@ -58,6 +59,10 @@ const warmBootKbColumn = sql<number>`coalesce((${runStatesTable.state}->${stateK
 
 const buildPath = sql`${runStatesTable.state}->${stateKey("build")}`;
 
+const lastPlayedOnColumn = sql<
+	string | null
+>`coalesce((select max(${pollResponsesTable.answer_date}) from ${pollResponsesTable} where ${pollResponsesTable.run_id} = ${runsTable.id} and ${pollResponsesTable.mode} = 'session'), ${runsTable.seed_date})`;
+
 export const publicBuildColumn = sql<StoredPublicBuild>`json_build_object(
 	${storedKey("configs")}, coalesce((
 		select json_agg(json_build_object(
@@ -92,6 +97,7 @@ export type ClimberRow = {
 	auditSchedule: AuditSchedule;
 	warmBootKb: number;
 	isGuest: boolean;
+	lastPlayedOn: string | null;
 };
 
 const CLIMBER_COLUMNS = {
@@ -115,6 +121,7 @@ const CLIMBER_COLUMNS = {
 	auditSchedule: auditScheduleColumn,
 	warmBootKb: warmBootKbColumn,
 	isGuest: usersTable.is_guest,
+	lastPlayedOn: lastPlayedOnColumn,
 };
 
 type ClimberSelection = Omit<

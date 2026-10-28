@@ -3,10 +3,15 @@ import { describe, expect, it } from "vitest";
 import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	gateStartPercent,
+	idleDaysOf,
+	isResting,
+	isRestingClimber,
 	positionPercent,
+	RESTING_AFTER_DAYS,
 	TRACK_LENGTH,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
+import { TEST_DATES } from "~/test/kanto";
 
 describe("trackPosition", () => {
 	it("counts a fresh run at the start of the ladder", () => {
@@ -80,5 +85,41 @@ describe("trackPosition", () => {
 			trackPosition({ gate: 2, pollsIntoGate: 0 }),
 		];
 		expect(climb).toEqual([...climb].sort((a, b) => a - b));
+	});
+});
+
+describe("idleDaysOf", () => {
+	const today = TEST_DATES.birthday;
+
+	it("counts a run that answered today as not idle at all", () => {
+		expect(idleDaysOf(today, today)).toBe(0);
+	});
+
+	it("counts whole calendar days since the last answer", () => {
+		expect(idleDaysOf("2026-05-12", today)).toBe(1);
+		expect(idleDaysOf("2026-05-10", today)).toBe(3);
+	});
+
+	it("never counts backwards for an answer dated after today", () => {
+		expect(idleDaysOf("2026-05-14", today)).toBe(0);
+	});
+});
+
+describe("isResting", () => {
+	it("lets a climber miss two days before they rest", () => {
+		expect(isResting(RESTING_AFTER_DAYS - 1)).toBe(false);
+	});
+
+	it("rests a climber on the third day without an answer", () => {
+		expect(isResting(RESTING_AFTER_DAYS)).toBe(true);
+		expect(isResting(RESTING_AFTER_DAYS + 4)).toBe(true);
+	});
+});
+
+describe("isRestingClimber", () => {
+	it("rests a climber by their idle days, never one without an answer date", () => {
+		expect(isRestingClimber({ idleDays: RESTING_AFTER_DAYS })).toBe(true);
+		expect(isRestingClimber({ idleDays: 1 })).toBe(false);
+		expect(isRestingClimber({})).toBe(false);
 	});
 });
