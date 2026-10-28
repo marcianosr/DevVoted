@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.8.0 - 2026-10-28
 ### Added
 - **See who matched each pair.** The review puts the faces of who matched a pair on its right tile, as they already did beside a choice.
 - **Prep states what a pairs poll pays.** Scoring gains a **Matching pairs up to** row with its steps: 0, 0.67, 1.33 and 2 on four pairs.
