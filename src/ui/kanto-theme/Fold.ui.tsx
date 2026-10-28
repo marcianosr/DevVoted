@@ -34,6 +34,7 @@ export type FoldProps = {
 	badges?: readonly FoldBadge[];
 	open?: boolean;
 	flush?: boolean;
+	surface?: boolean;
 	children: ReactNode;
 };
 
@@ -47,9 +48,10 @@ export const Fold = ({
 	badges = [],
 	open = false,
 	flush = false,
+	surface = true,
 	children,
 }: FoldProps) => (
-	<details open={open} className={clsx(PANEL_SURFACE, FOLD)}>
+	<details open={open} className={clsx(surface && PANEL_SURFACE, FOLD)}>
 		<summary className={SUMMARY}>
 			<span aria-hidden className={CARET}>
 				{CARET_GLYPH}

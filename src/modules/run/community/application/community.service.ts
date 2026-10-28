@@ -80,8 +80,11 @@ type CommunityAnswer = {
 	guest: boolean;
 };
 
+export type PairSides = { left: string; right: string };
+
 export type CommunityOptionResult = {
 	label: string;
+	pair?: PairSides;
 	isRight: boolean;
 	count: number;
 	percent: number;
@@ -215,6 +218,7 @@ const PAIR_JOIN = " ⟷ ";
 
 type OptionRow = {
 	label: string;
+	pair?: PairSides;
 	isRight: boolean;
 	optionIds: readonly number[];
 };
@@ -230,8 +234,10 @@ const pairRowsOf = (poll: CommunityPollRecord): readonly OptionRow[] =>
 	[...new Set(poll.options.flatMap((option) => option.group ?? []))].map(
 		(group) => {
 			const tiles = poll.options.filter((option) => option.group === group);
+			const [left, right] = tiles.map((tile) => tile.label);
 			return {
 				label: tiles.map((tile) => tile.label).join(PAIR_JOIN),
+				pair: { left: left ?? "", right: right ?? "" },
 				isRight: true,
 				optionIds: tiles.map((tile) => tile.id),
 			};
@@ -250,6 +256,7 @@ const optionRowsOf = (
 			);
 			return {
 				label: row.label,
+				...(row.pair === undefined ? {} : { pair: row.pair }),
 				isRight: row.isRight,
 				count: pickers.length,
 				percent: toPercent(pickers.length, pollAnswers.length),

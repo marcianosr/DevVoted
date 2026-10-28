@@ -1085,6 +1085,17 @@ describe("a pairs poll on the community board", () => {
 		expect(detail?.options.every((row) => row.isRight)).toBe(true);
 	});
 
+	it("names the left and right tile of each pair", async () => {
+		arrangePairs();
+
+		const detail = await pairRowsOf();
+
+		expect(detail?.options[1].pair).toEqual({
+			left: "div > div",
+			right: "a direct child",
+		});
+	});
+
 	it("counts who matched each pair, out of everyone who answered", async () => {
 		arrangePairs();
 

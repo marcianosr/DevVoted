@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **See who matched each pair.** The review puts the faces of who matched a pair on its right tile, as they already did beside a choice.
+- **Prep states what a pairs poll pays.** Scoring gains a **Matching pairs up to** row with its steps: 0, 0.67, 1.33 and 2 on four pairs.
+
+### Changed
+- **The pairs mark moves to the corner on a phone.** The ✓ or ✗ sits on the tile's corner, so the tile's text keeps the room.
+- **Score breakdown starts folded.** The gate outcome and the run's end fold what each poll paid under **Score breakdown**; open it to read the gates.
+- **Ledger notes badge their figures.** "11.2% past the full bar" and "×1.5 on a PERFECT close" read their numbers and band as badges.
+
 ### Fixed
 - **New polls arrive when the clock says they do.** The countdown to new polls ran to your own midnight, while the day only turned at midnight UTC, so outside the UK the clock could hit zero hours before the polls came. The day now turns at midnight UTC for everyone, and the countdown runs to that moment: 02:00 in the Netherlands in summer (01:00 in winter), 20:00 in New York.
 

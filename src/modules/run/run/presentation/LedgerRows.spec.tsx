@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { LedgerRows } from "./LedgerRows.ui";
 
@@ -138,6 +138,20 @@ describe("LedgerRows", () => {
 
 		expect(note.textContent).toBe("12% past the full bar");
 		expect(note.closest("ul")).toHaveClass("font-normal");
+	});
+
+	it("badges the figures in a note, the words around them plain", () => {
+		render(
+			<LedgerRows
+				rows={[{ label: "Band bonus", notes: ["×1.5 on a PERFECT close"] }]}
+			/>
+		);
+
+		const note = screen.getByRole("listitem");
+
+		expect(within(note).getByText("×1.5")).toHaveClass("badge-theme");
+		expect(within(note).getByText("PERFECT")).toHaveClass("badge-theme");
+		expect(within(note).getByText("on a")).not.toHaveClass("badge-theme");
 	});
 
 	it("renders one row per entry, in the order the gate asked them", () => {
