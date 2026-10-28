@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **New polls arrive when the clock says they do.** The countdown to new polls ran to your own midnight, while the day only turned at midnight UTC, so outside the UK the clock could hit zero hours before the polls came. The day now turns at midnight UTC for everyone, and the countdown runs to that moment: 02:00 in the Netherlands in summer (01:00 in winter), 20:00 in New York.
 
 ## 2.7.1 - 2026-10-28
 ### Changed

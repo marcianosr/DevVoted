@@ -12,7 +12,7 @@ import {
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
 import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
-import { localDayRange } from "~/shared/lib/dateUtils";
+import { gameDayRange } from "~/shared/lib/dateUtils";
 
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type { Build } from "~/modules/run/build/domain/build.model";
@@ -236,7 +236,7 @@ const toFallenRow = ({
 });
 
 const fellOn = (date: string) => {
-	const { start: dayStart, end: dayEnd } = localDayRange(date);
+	const { start: dayStart, end: dayEnd } = gameDayRange(date);
 
 	return and(
 		eq(runsTable.mode, "session"),

@@ -1,4 +1,12 @@
-import { describe, expect, it } from "vitest";
+import {
+	afterAll,
+	afterEach,
+	beforeAll,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 
 import {
 	dayAfter,
@@ -6,9 +14,24 @@ import {
 	formatClock,
 	formatCompactDuration,
 	formatDurationMs,
-	localDayRange,
+	gameDayRange,
+	getTodayDateString,
+	nextGameDayStart,
 } from "./dateUtils";
 import { TEST_DATES } from "~/test/kanto";
+
+const AHEAD_OF_UTC = "Pacific/Auckland";
+const BEHIND_UTC = "America/Los_Angeles";
+const LATE_ON_CHRISTMAS_EVE_UTC = new Date("2025-12-24T23:30:00Z");
+
+const originalTimeZone = process.env.TZ;
+const runIn = (timeZone: string) => {
+	process.env.TZ = timeZone;
+};
+
+afterAll(() => {
+	process.env.TZ = originalTimeZone;
+});
 
 describe("formatDurationMs", () => {
 	it("reads sub-minute durations as bare seconds", () => {
@@ -72,37 +95,63 @@ describe("formatClock", () => {
 	});
 });
 
-describe("localDayRange", () => {
-	it("spans midnight to midnight of the day named", () => {
-		const { start, end } = localDayRange(TEST_DATES.birthday);
+describe("the game day is the UTC day", () => {
+	beforeAll(() => vi.useFakeTimers());
+	afterAll(() => vi.useRealTimers());
+	afterEach(() => runIn(originalTimeZone ?? "UTC"));
 
-		expect(start.getFullYear()).toBe(end.getFullYear());
-		expect(start.getHours()).toBe(0);
-		expect(start.getMinutes()).toBe(0);
-		expect(end.getHours()).toBe(0);
-		expect(end.getDate()).toBe(start.getDate() + 1);
+	it("names today by the UTC date where the local clock already reads tomorrow", () => {
+		runIn(AHEAD_OF_UTC);
+		vi.setSystemTime(LATE_ON_CHRISTMAS_EVE_UTC);
+
+		expect(getTodayDateString()).toBe(TEST_DATES.christmasEve);
+		expect(dayAfter(getTodayDateString())).toBe(TEST_DATES.christmas);
 	});
 
-	it("reads the date in local time, not UTC", () => {
-		const { start } = localDayRange(TEST_DATES.birthday);
-		const [year, month, day] = TEST_DATES.birthday.split("-").map(Number);
+	it("names today by the UTC date where the local clock still reads yesterday", () => {
+		runIn(BEHIND_UTC);
+		vi.setSystemTime(new Date(`${TEST_DATES.christmas}T02:00:00Z`));
 
-		expect(start.getFullYear()).toBe(year);
-		expect(start.getMonth()).toBe(month - 1);
-		expect(start.getDate()).toBe(day);
+		expect(getTodayDateString()).toBe(TEST_DATES.christmas);
+	});
+
+	it("starts the next game day at UTC midnight, not local midnight", () => {
+		runIn(AHEAD_OF_UTC);
+
+		expect(nextGameDayStart(LATE_ON_CHRISTMAS_EVE_UTC).toISOString()).toBe(
+			`${TEST_DATES.christmas}T00:00:00.000Z`
+		);
+	});
+
+	it("starts the next game day a full day ahead when called exactly at midnight", () => {
+		const midnight = new Date(`${TEST_DATES.christmas}T00:00:00Z`);
+
+		expect(nextGameDayStart(midnight).toISOString()).toBe(
+			"2025-12-26T00:00:00.000Z"
+		);
+	});
+});
+
+describe("gameDayRange", () => {
+	it("spans UTC midnight to UTC midnight of the day named, whatever the local zone", () => {
+		runIn(BEHIND_UTC);
+		const { start, end } = gameDayRange(TEST_DATES.birthday);
+		runIn(originalTimeZone ?? "UTC");
+
+		expect(start.toISOString()).toBe(`${TEST_DATES.birthday}T00:00:00.000Z`);
+		expect(end.toISOString()).toBe("2026-05-14T00:00:00.000Z");
 	});
 
 	it("rolls a month end over rather than landing on day 32", () => {
-		const { start, end } = localDayRange("2026-01-31");
-		expect(start.getMonth()).toBe(0);
-		expect(end.getMonth()).toBe(1);
-		expect(end.getDate()).toBe(1);
+		expect(gameDayRange("2026-01-31").end.toISOString()).toBe(
+			"2026-02-01T00:00:00.000Z"
+		);
 	});
 
 	it("crosses a leap day without skipping it", () => {
-		const { end } = localDayRange("2028-02-28");
-		expect(end.getMonth()).toBe(1);
-		expect(end.getDate()).toBe(29);
+		expect(gameDayRange("2028-02-28").end.toISOString()).toBe(
+			"2028-02-29T00:00:00.000Z"
+		);
 	});
 });
 
@@ -120,6 +169,14 @@ describe("dayAfter", () => {
 describe("dayBefore", () => {
 	it("names the calendar day before a date", () => {
 		expect(dayBefore(TEST_DATES.christmas)).toBe(TEST_DATES.christmasEve);
+	});
+
+	it("names the same day before in a zone behind UTC", () => {
+		runIn(BEHIND_UTC);
+		const previous = dayBefore(TEST_DATES.christmas);
+		runIn(originalTimeZone ?? "UTC");
+
+		expect(previous).toBe(TEST_DATES.christmasEve);
 	});
 
 	it("steps back across a month and a year", () => {

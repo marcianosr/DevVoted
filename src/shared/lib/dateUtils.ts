@@ -1,28 +1,27 @@
-import { addDays, format, subDays } from "date-fns";
+const DAY_MS = 86_400_000;
 
-export const getTodayDateString = () => format(new Date(), "yyyy-MM-dd");
+const toGameDate = (moment: Date): string => moment.toISOString().slice(0, 10);
+
+const startOfGameDay = (date: string): Date => new Date(`${date}T00:00:00Z`);
+
+export const getTodayDateString = (): string => toGameDate(new Date());
 
 export const dayBefore = (date: string): string =>
-	format(subDays(new Date(`${date}T00:00:00`), 1), "yyyy-MM-dd");
+	toGameDate(new Date(startOfGameDay(date).getTime() - DAY_MS));
 
 export const dayAfter = (date: string): string =>
-	format(addDays(new Date(`${date}T00:00:00`), 1), "yyyy-MM-dd");
+	toGameDate(new Date(startOfGameDay(date).getTime() + DAY_MS));
 
-export const localDayRange = (date: string): { start: Date; end: Date } => {
-	const start = new Date(`${date}T00:00:00`);
-	const end = new Date(start);
-	end.setDate(end.getDate() + 1);
-	return { start, end };
+export const gameDayRange = (date: string): { start: Date; end: Date } => {
+	const start = startOfGameDay(date);
+	return { start, end: new Date(start.getTime() + DAY_MS) };
 };
 
-export const nextLocalMidnight = (now: Date): Date => {
+export const nextGameDayStart = (now: Date): Date => {
 	const next = new Date(now);
-	next.setHours(24, 0, 0, 0);
+	next.setUTCHours(24, 0, 0, 0);
 	return next;
 };
-
-export const getMsUntilNextPoll = (now: Date): number =>
-	nextLocalMidnight(now).getTime() - now.getTime();
 
 export const formatCompactDuration = (ms: number): string => {
 	const totalMinutes = Math.floor(Math.max(0, ms) / 60_000);
