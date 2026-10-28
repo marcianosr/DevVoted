@@ -347,3 +347,21 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[remotes.production]
+project_id = "smrkmigjsnhrhwrxobjc"
+
+[remotes.production.api]
+schemas = ["public"]
+
+[remotes.production.auth]
+site_url = "https://devvoted.dev"
+additional_redirect_urls = ["http://localhost:3005/auth/callback", "https://devvoted-tanstack.vercel.app/auth/callback", "https://devvoted.dev/**", "https://www.devvoted.dev/auth/callback"]
+
+[remotes.production.auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
