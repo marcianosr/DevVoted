@@ -77,3 +77,7 @@ export const DevelopmentEmail: Story = {
 export const DevelopmentGithub: Story = {
 	args: { devSignIn: { ...DEV_EMAIL, method: "github" } },
 };
+
+export const IdentityTaken: Story = {
+	args: { identityTaken: true },
+};

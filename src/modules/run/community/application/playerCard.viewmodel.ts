@@ -57,7 +57,7 @@ export type PlayerCardView = {
 export const playerCardViewFor = (
 	userId: string,
 	{ identity, theme }: ProfileFace,
-	swatchGates: readonly number[],
+	swatchGates: readonly number[] | undefined,
 	run: Standing | null
 ): PlayerCardView => ({
 	userId,
@@ -68,7 +68,7 @@ export const playerCardViewFor = (
 	theme,
 	authorship: identity.authorship,
 	pollsAnswered: identity.pollsAnswered,
-	swatchGates,
+	...(swatchGates === undefined ? {} : { swatchGates }),
 	...(run === null ? {} : { run }),
 });
 

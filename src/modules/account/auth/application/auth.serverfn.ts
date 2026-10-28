@@ -8,6 +8,13 @@ import {
 } from "~/shared/utils/errorReporting";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
+const isGuestSession = async (
+	supabase: ReturnType<typeof getSupabaseServerClient>
+): Promise<boolean> => {
+	const { data } = await supabase.auth.getUser();
+	return data.user?.is_anonymous === true;
+};
+
 export const loginFn = createServerFn({ method: "POST" })
 	.validator((d: { email: string; password: string }) => d)
 	.handler(async ({ data }) => {
@@ -31,10 +38,15 @@ export const signupFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		const supabase = await getSupabaseServerClient();
-		const { error } = await supabase.auth.signUp({
-			email: data.email,
-			password: data.password,
-		});
+		const { error } = (await isGuestSession(supabase))
+			? await supabase.auth.updateUser({
+					email: data.email,
+					password: data.password,
+				})
+			: await supabase.auth.signUp({
+					email: data.email,
+					password: data.password,
+				});
 		if (error) {
 			return {
 				error: true,

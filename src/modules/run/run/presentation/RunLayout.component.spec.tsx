@@ -190,6 +190,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				guestPlayers: 0,
 				players: [],
 				leaders: [],
 				polls: [],
@@ -222,6 +223,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				guestPlayers: 0,
 				players: [],
 				leaders: [],
 				polls: [],
@@ -336,6 +338,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				guestPlayers: 0,
 				players: [],
 				leaders: [],
 				polls: [],

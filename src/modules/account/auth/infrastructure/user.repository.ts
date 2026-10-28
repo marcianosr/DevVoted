@@ -3,6 +3,7 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "~/database/db";
 import { userConfigUnlocksTable, usersTable } from "~/database/schema";
 
+import { guestNameOf } from "~/modules/account/auth/domain/guestName.model";
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
 
 export type AccountUser = {
@@ -12,8 +13,6 @@ export type AccountUser = {
 	photoUrl?: string | null;
 	isGuest: boolean;
 };
-
-const GUEST_DISPLAY_NAME = "Guest";
 
 type UserRow = typeof usersTable.$inferSelect;
 
@@ -48,7 +47,7 @@ export const findUserByEmail = async (
 };
 
 const displayNameFor = (user: AccountUser): string =>
-	user.displayName || user.email?.split("@")[0] || GUEST_DISPLAY_NAME;
+	user.displayName || user.email?.split("@")[0] || guestNameOf(user.id);
 
 export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 	db.transaction(async (tx) => {
@@ -75,6 +74,21 @@ export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 			.onConflictDoNothing();
 		return toAccountUser(row);
 	});
+
+export const promoteGuest = async (user: AccountUser): Promise<AccountUser> => {
+	const [row] = await db
+		.update(usersTable)
+		.set({
+			is_guest: false,
+			email: user.email,
+			display_name: displayNameFor(user),
+			photo_url: user.photoUrl || null,
+		})
+		.where(eq(usersTable.id, user.id))
+		.returning();
+	if (!row) throw new Error("Guest row not found");
+	return toAccountUser(row);
+};
 
 export const touchLastSeen = async (userId: string): Promise<void> => {
 	await db

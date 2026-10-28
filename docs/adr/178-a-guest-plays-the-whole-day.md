@@ -35,17 +35,27 @@ Withheld from a guest:
 - titles and category records
 - the marketplace and trading
 - full profiles and open builds
+- the community page
 
-A guest is absent from the community board, leaderboards, turnout and hover cards.
-Sign-in is offered and never forced: at the first gate close and at the debrief.
+A guest's run earns swatches, titles, config and service unlocks and archive like
+anyone's, and the run shows them, but none of it is stored on the account. Linking
+keeps the run, not what it earned before the link, and not the name.
 
-Amended 2026-10-08: the community header counts guests apart from account
-holders, as **2 players · 45 guest players**, and omits the guest figure when it is
-zero. Faces, records, turnout rows and hover cards stay account-only.
+A guest plays under a generated name: a trait, a Kanto or Johto Pokémon and a
+number, such as **QuirkyAriados8870**, drawn from the account id so it never
+changes. Account holders see guests on the board like anyone else: among today's
+faces, on the climb map, in the turnout rows and the day records, and on a player
+card, which draws no swatch strip and links to no profile. The header counts them
+apart, as **47 players · 45 guests**, and omits the guest figure at zero. A guest
+never seats a category board or the Hall of Fame, cannot loot a fallen run, and can
+be looted and audited like anyone.
 
-Amended 2026-10-21: a guest's run earns swatches, titles, config and service
-unlocks and archive like anyone's, and the run shows them, but none of it is
-stored on the account. Linking keeps the run, not what it earned before the link.
+A guest does not see the community page or the review of a gate's answers. The
+server refuses a guest both reads, and the page draws a sample board, blurred and
+dimmed, under a card headed **Sign up to see what other players did!**
+that lists what an account buys (view the community, save your progress, collect
+cosmetics, review your answers, join the competition) and a sign-in press. Sign-in is
+offered and never forced: there, at the first gate close and at the debrief.
 
 ## Decision 4: the guest run lives on the server
 
@@ -54,6 +64,13 @@ run in browser storage. The session persists in the browser, so tomorrow on the
 same device is the same `auth.uid()` and the same `run_states` row. `linkIdentity`
 keeps that id, so signing in migrates nothing. Guests count as daily players,
 because they have real ids.
+
+Amended 2026-10-28: a guest's GitHub press links the identity onto the anonymous
+user instead of signing in, and an email sign-up sets the email and password on
+it. The users row is promoted in place, same id, on the next read: the guest flag
+clears, and the email, GitHub name and photo replace the generated name. A GitHub
+identity that already has an account cannot be linked; the login page says so and
+its next press signs into that account, and the guest run stays behind.
 
 ## Rejected
 

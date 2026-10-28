@@ -306,6 +306,14 @@ describe("getPublicProfileService", () => {
 		expect(response.success).toBe(false);
 	});
 
+	it("reports nothing for a guest, who has a card but no page", async () => {
+		fetchPublicProfile.mockResolvedValue({ ...PROFILE, isGuest: true });
+
+		const response = await getPublicProfileService(RED);
+
+		expect(response.success).toBe(false);
+	});
+
 	it("gives a visitor counts only, never the questions behind them", async () => {
 		const response = await getPublicProfileService(RED);
 		const serialised = JSON.stringify(unwrap(response));

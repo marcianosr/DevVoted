@@ -89,6 +89,7 @@ const answerRow = (
 	photoUrl: null,
 	borderUrl: null,
 	mirrored: false,
+	isGuest: false,
 	...over,
 });
 
@@ -175,6 +176,7 @@ const standing = (
 	closes: [],
 	auditSchedule: {},
 	warmBootKb: 0,
+	isGuest: false,
 	...over,
 	...(over.handle === undefined ? {} : { handle: over.handle }),
 });
@@ -1128,5 +1130,59 @@ describe("getReviewPollsService", () => {
 
 		expect(voterNames).toContain("Red");
 		expect(voterNames).toContain("Blue");
+	});
+});
+
+describe("guests on the board", () => {
+	const GUEST = "quirky-ariados";
+	const GUEST_NAME = "QuirkyAriados8870";
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		arrange();
+		vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue([
+			...answerRows,
+			answerRow({
+				responseId: 8,
+				pollId: 10,
+				userId: GUEST,
+				displayName: GUEST_NAME,
+				optionId: 101,
+				isGuest: true,
+			}),
+		]);
+	});
+
+	it("counts a guest among the players, with their face, and apart from them", async () => {
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.totalPlayers).toBe(4);
+		expect(result.data.guestPlayers).toBe(1);
+		expect(result.data.players.map((player) => player.displayName)).toContain(
+			GUEST_NAME
+		);
+	});
+
+	it("marks a guest climber and a guest's fallen run, and nobody else", async () => {
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue([
+			CLIMBERS[0],
+			{ ...CLIMBERS[1], userId: GUEST, displayName: GUEST_NAME, isGuest: true },
+		]);
+		vi.mocked(climbQueries.fetchFallenToday).mockResolvedValue([
+			{ ...FALLEN[0], isGuest: true },
+		]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const climbers = result.data.climb?.climbers ?? [];
+		expect(climbers.find((entry) => entry.id === GUEST)?.guest).toBe(true);
+		expect(climbers.find((entry) => entry.id === RED)).not.toHaveProperty(
+			"guest"
+		);
+		expect(result.data.climb?.fallen[0].guest).toBe(true);
 	});
 });

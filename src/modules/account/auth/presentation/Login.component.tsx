@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import type { SignInWithOAuthCredentials } from "@supabase/supabase-js";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -31,15 +32,23 @@ const SIGN_UP_INSTEAD = "Sign up instead?";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-export type LoginProps = { theme?: KantoColor };
+export type LoginProps = { theme?: KantoColor; identityTaken?: boolean };
 
 const DEFAULT_THEME: KantoColor = "cerulean";
 
-export const loginLoader = (): Required<LoginProps> => ({
+export const loginLoader = (): { theme: KantoColor } => ({
 	theme: randomLoginTheme(),
 });
 
-export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
+const githubCredentials = (): SignInWithOAuthCredentials => ({
+	provider: "github",
+	options: { redirectTo: `${window.location.origin}/auth/callback` },
+});
+
+export const Login = ({
+	theme = DEFAULT_THEME,
+	identityTaken = false,
+}: LoginProps) => {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const [githubPending, setGithubPending] = useState(false);
@@ -72,16 +81,15 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 		mutationFn: useServerFn(signupFn),
 	});
 
+	const linksTheGuest = viewer?.isGuest === true && !identityTaken;
+
 	const handleGithubLogin = async () => {
 		setGithubPending(true);
 		try {
-			const supabase = getSupabaseBrowserClient();
-			const { error } = await supabase.auth.signInWithOAuth({
-				provider: "github",
-				options: {
-					redirectTo: `${window.location.origin}/auth/callback`,
-				},
-			});
+			const { auth } = getSupabaseBrowserClient();
+			const { error } = linksTheGuest
+				? await auth.linkIdentity(githubCredentials())
+				: await auth.signInWithOAuth(githubCredentials());
 
 			if (error) {
 				console.error("GitHub OAuth error:", error);
@@ -117,6 +125,7 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 			hero={heroFor()}
 			card={demoCardFor(step)}
 			github={{ pending: githubPending, onPress: handleGithubLogin }}
+			identityTaken={identityTaken}
 			guest={
 				viewer?.isGuest
 					? undefined

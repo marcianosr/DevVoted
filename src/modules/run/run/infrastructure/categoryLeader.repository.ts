@@ -201,6 +201,7 @@ export const fetchCategoryLeader = async (
 		})
 		.from(bests)
 		.innerJoin(usersTable, eq(usersTable.id, bests.userId))
+		.where(eq(usersTable.is_guest, false))
 		.orderBy(desc(bests.bestStreak), asc(bests.userId))
 		.limit(1);
 
@@ -235,6 +236,7 @@ export const fetchCategoryBoards = async (
 		})
 		.from(bests)
 		.innerJoin(usersTable, eq(usersTable.id, bests.userId))
+		.where(eq(usersTable.is_guest, false))
 		.as("ranked");
 
 	const rows = await reader

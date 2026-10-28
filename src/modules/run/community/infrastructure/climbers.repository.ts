@@ -91,6 +91,7 @@ export type ClimberRow = {
 	closes: RecordedClose[];
 	auditSchedule: AuditSchedule;
 	warmBootKb: number;
+	isGuest: boolean;
 };
 
 const CLIMBER_COLUMNS = {
@@ -113,6 +114,7 @@ const CLIMBER_COLUMNS = {
 	closes: closesColumn,
 	auditSchedule: auditScheduleColumn,
 	warmBootKb: warmBootKbColumn,
+	isGuest: usersTable.is_guest,
 };
 
 type ClimberSelection = Omit<

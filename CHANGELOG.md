@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Play today without an account.** The home page has a press that starts today's five right away, no sign-in needed. Your run keeps climbing gate by gate on the same browser. Sign in to keep what the run earns, start more runs and get a profile.
 - **The home page shows a pairs poll.** The poll card that plays itself on the home page now includes a pairs poll, linking each status code to its meaning.
+- **Guests play under a Kanto name.** A guest is named like QuirkyAriados8870, a trait, a Kanto or Johto Pokémon and a number, so other players can tell guests apart on the board.
+- **Guests are on the community board.** Players with an account see guests among today's faces, on the climb map, in the turnout rows and the day records, with a player card. The header counts guests apart. Guests never seat a category board or the Hall of Fame, cannot loot a fallen run, and can be looted and audited like anyone.
+- **Signing up keeps your guest run.** Continue with GitHub while playing as a guest and the account takes over the same run, under your GitHub name. A GitHub account that already plays here is signed into instead, and the login page says so.
+- **Guests cannot open the community page or review their answers.** A guest sees a sample board, blurred and dimmed, under a card that reads "Sign up to see what other players did!", lists what an account buys and ends in a sign-in press.
 
 ## 2.6.5 - 2026-10-20
 ### Changed

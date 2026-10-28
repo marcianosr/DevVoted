@@ -1527,12 +1527,27 @@ its strip and swatches.
 
 A visitor can press **Play today without an account** on the home page and play
 today's five without signing in (ADR-178). The guest gets one real run, stored on the
-server, that climbs gate by gate across days on the same browser. A guest cannot
-abandon that run or start another, cannot suggest polls, and has no profile, Dex or
-look to change. Those pages offer sign-in instead.
+server, that climbs gate by gate across days on the same browser, under a generated
+name such as **QuirkyAriados8870**: a trait, a Kanto or Johto Pokémon and a number,
+drawn from the account id. A guest cannot abandon that run or start another, cannot
+suggest polls, and has no profile, Dex or look to change. Those pages offer sign-in
+instead. So do the community page and the review of a gate's answers: the server
+refuses a guest both, and the page draws a sample board, blurred and dimmed, under a
+card headed **Sign up to see what other players did!** that lists what an
+account buys and ends in a sign-in press.
+
+Signing up keeps the run. A guest's GitHub press links the GitHub identity onto the
+same account, so the run, its state and its answers stay where they are; the
+generated name gives way to the GitHub name. A GitHub account that already plays
+here cannot be linked: the login page says so, the next press signs into that
+account, and the guest run stays behind.
 
 A guest's run earns swatches, titles, unlocks and archived storage like anyone's,
-but none of it is kept on the account.
+but none of it is kept on the account. Other players see a guest on the community
+board: among today's faces, on the climb map, in the turnout rows and the day
+records, and on a player card that draws no swatch strip and links to no profile. A
+guest never seats a category board or the Hall of Fame, cannot loot, and can be
+looted and audited like anyone.
 
 ---
 
@@ -1546,7 +1561,9 @@ polls on the same day.
 The board sits at `/run/community`, one press from the shop or the gate result; a run locked mid-gate for
 the day lands here, with "Back to your run" disabled until local midnight. The
 header is titled **Community** and carries one clock badge: **New polls in …** while
-the day's polls are spent, **polls are open** otherwise. The page wears the Kanto kit (`CommunityScreen.ui.tsx`), one
+the day's polls are spent, **polls are open** otherwise. Beside it sit the day's
+figures: **47 players** who answered today and, when any did, **45 guests** among
+them (ADR-178). The page wears the Kanto kit (`CommunityScreen.ui.tsx`), one
 panel per section. The map spans the page under the header; below it, on a wide
 screen, the day's polls and an advertisement take the left column, and the Hall of
 Fame, Who cleared what, today's records, incidents and the leaders stack on the right. On a phone they stack in that order. What
@@ -1556,7 +1573,7 @@ page — leaders, climbers, fallen — wears the player's equipped border over a
 photo or a two-letter-initials fallback.
 
 **Who cleared what** is the turnout panel. It opens on **Answered today**: every player who
-answered a poll today, with their face, whatever their gate did (ADR-176, amended). Each live run that closed a gate today sits in
+answered a poll today, guests under their generated name included, with their face, whatever their gate did (ADR-176, amended). Each live run that closed a gate today sits in
 one row: **PERFECT** (finished at 100%), **HEALTHY** (comfortably cleared), **OK**
 (narrowly cleared) or **SHAKY** (the gate held them). **DANGER** (the run ended today)
 lists every player whose run fell today and who has not started again; once they do,

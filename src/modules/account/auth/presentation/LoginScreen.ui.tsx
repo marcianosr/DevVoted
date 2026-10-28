@@ -27,6 +27,8 @@ export const COPY = {
 	guest: "Play today without an account",
 	guestPending: "Starting…",
 	wiki: "Read how this game works",
+	identityTaken:
+		"That GitHub account already plays here. Continue to sign into it; today's guest run stays behind.",
 	coverage: "coverage",
 	method: "Sign in with",
 	email: "Email",
@@ -76,6 +78,7 @@ export type LoginScreenProps = {
 	card: LoginDemoCard;
 	github: PendingPress;
 	guest?: PendingPress;
+	identityTaken?: boolean;
 	wikiHref: string;
 	devSignIn?: DevSignIn;
 };
@@ -131,11 +134,12 @@ const Hero = ({
 	hero,
 	github,
 	guest,
+	identityTaken,
 	wikiHref,
 	devSignIn,
 }: Pick<
 	LoginScreenProps,
-	"hero" | "github" | "guest" | "wikiHref" | "devSignIn"
+	"hero" | "github" | "guest" | "identityTaken" | "wikiHref" | "devSignIn"
 >) => (
 	<div className={HERO}>
 		<h1 className={HEADLINE}>
@@ -155,6 +159,9 @@ const Hero = ({
 			<SignIn github={github} devSignIn={devSignIn} />
 			{guest === undefined ? null : <GuestPress guest={guest} />}
 			<div className={UNDER_PRESS}>
+				{identityTaken ? (
+					<Typography variant="caption">{COPY.identityTaken}</Typography>
+				) : null}
 				<Typography variant="caption">
 					<Link href={wikiHref}>{COPY.wiki}</Link>
 				</Typography>
@@ -204,6 +211,7 @@ export const LoginScreen = ({
 	card,
 	github,
 	guest,
+	identityTaken,
 	wikiHref,
 	devSignIn,
 }: LoginScreenProps) => (
@@ -213,6 +221,7 @@ export const LoginScreen = ({
 				hero={hero}
 				github={github}
 				guest={guest}
+				identityTaken={identityTaken}
 				wikiHref={wikiHref}
 				devSignIn={devSignIn}
 			/>

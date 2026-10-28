@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	recordsFor,
 	showedUpBand,
+	statsFor,
 	turnoutFor,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
@@ -177,5 +178,19 @@ describe("showedUpBand", () => {
 		expect(
 			showedUpBand({ totalPlayers: 2, players: [BROCK, MISTY] }).shown
 		).toBe(10);
+	});
+});
+
+describe("statsFor", () => {
+	it("counts the guests apart from the players", () => {
+		expect(
+			statsFor({ totalPlayers: 47, guestPlayers: 45 }).map((stat) => stat.label)
+		).toEqual(["47 players", "45 guests"]);
+	});
+
+	it("leaves the guest figure out when nobody played without an account", () => {
+		expect(
+			statsFor({ totalPlayers: 2, guestPlayers: 0 }).map((stat) => stat.label)
+		).toEqual(["2 players"]);
 	});
 });

@@ -30,6 +30,7 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import type {
 	CommunityScreenProps,
 	CommunityRecords,
+	CommunityStat,
 	CommunityTurnout,
 	TurnoutBand,
 } from "~/modules/run/community/presentation/CommunityScreen.ui";
@@ -51,6 +52,7 @@ const COPY = {
 	turnoutTitle: "Who cleared what",
 	recordsTitle: "Today’s records",
 	answeredToday: "Answered today",
+	guestsHint: "playing without an account",
 	unheldRecord: "—",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
@@ -212,6 +214,23 @@ export const showedUpBand = (
 	shown: SHOWED_UP_FACES,
 	...facesOf(view.players),
 });
+
+const guestStat = (guestPlayers: number): CommunityStat => ({
+	icon: "lock",
+	label: plural(guestPlayers, "guest"),
+	hint: COPY.guestsHint,
+});
+
+export const statsFor = (
+	view: Pick<RunCommunityView, "totalPlayers" | "guestPlayers">
+): CommunityStat[] => [
+	{
+		icon: "community",
+		label: plural(view.totalPlayers, "player"),
+		hint: COPY.answeredToday,
+	},
+	...(view.guestPlayers === 0 ? [] : [guestStat(view.guestPlayers)]),
+];
 
 export type FallenPress = (userId: string) => (() => void) | undefined;
 
@@ -421,13 +440,7 @@ export const communityScreenPropsFor = ({
 			countdown: countdown ?? COPY.pollsOpen,
 			countdownColor: countdown === undefined ? "viridian" : undefined,
 			countdownHint: COPY.countdownHint,
-			stats: [
-				{
-					icon: "community",
-					label: plural(view.totalPlayers, "player"),
-					hint: COPY.answeredToday,
-				},
-			],
+			stats: statsFor(view),
 			prep: {
 				label: back.label,
 				onPress: back.disabled === true ? undefined : back.onBack,

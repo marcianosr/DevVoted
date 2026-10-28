@@ -42,12 +42,22 @@ const exchangeCodeForSession = createServerFn({ method: "GET" })
 		}
 	});
 
+const IDENTITY_ALREADY_EXISTS = "identity_already_exists";
+
+const stringOf = (value: unknown): string | undefined =>
+	typeof value === "string" && value !== "" ? value : undefined;
+
 export const Route = createFileRoute("/auth/callback")({
 	validateSearch: (search: Record<string, unknown>) => ({
-		code: (search.code as string) || "",
-		error: (search.error as string) || undefined,
+		code: stringOf(search.code) ?? "",
+		error: stringOf(search.error),
+		error_code: stringOf(search.error_code),
 	}),
 	beforeLoad: async ({ search, context }) => {
+		if (search.error_code === IDENTITY_ALREADY_EXISTS) {
+			throw redirect({ to: "/login", search: { identity: "taken" } });
+		}
+
 		if (search.error) {
 			throw redirect({
 				to: "/login",

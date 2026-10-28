@@ -28,6 +28,7 @@ export type PublicProfileRow = {
 	ownedSwatchIds: string[];
 	equippedSwatchId: string | null;
 	role: AuthorRole;
+	isGuest: boolean;
 };
 
 export const fetchPublicProfile = async (
@@ -45,6 +46,7 @@ export const fetchPublicProfile = async (
 			ownedSwatchIds: usersTable.owned_swatch_ids,
 			equippedSwatchId: usersTable.equipped_swatch_id,
 			role: usersTable.role,
+			isGuest: usersTable.is_guest,
 		})
 		.from(usersTable)
 		.where(eq(usersTable.id, userId))

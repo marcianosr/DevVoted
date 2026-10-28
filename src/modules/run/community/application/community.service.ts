@@ -75,6 +75,7 @@ type CommunityAnswer = {
 	user: Player;
 	optionIds: Set<number>;
 	mirrored: boolean;
+	guest: boolean;
 };
 
 export type CommunityOptionResult = {
@@ -120,6 +121,7 @@ export type ClimbClimber = ClimbMarker & {
 	build?: PublicBuild;
 	closingBand?: CoverageBandId;
 	startedAtGate?: number;
+	guest?: boolean;
 } & ClimbStanding;
 
 export type ClimbFallen = ClimbMarker &
@@ -137,6 +139,7 @@ export type ClimbFallen = ClimbMarker &
 		lootedByName: string | null;
 		lootedByPhotoUrl: string | null;
 		lootedByBorderUrl: string | null;
+		guest?: boolean;
 	};
 
 export type ClimbViewer = {
@@ -155,6 +158,7 @@ export type ClimbTodayView = {
 export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
+	guestPlayers: number;
 	players: readonly CommunityVoter[];
 	leaders: readonly CategoryBoard[];
 	polls: RunCommunityPoll[];
@@ -175,6 +179,7 @@ const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
 			},
 			optionIds: new Set<number>(),
 			mirrored: row.mirrored,
+			guest: row.isGuest,
 		};
 		if (row.optionId !== null) answer.optionIds.add(row.optionId);
 		byResponse.set(row.responseId, answer);
@@ -197,6 +202,10 @@ const playersOf = (
 			(user) => ({ ...user, you: user.id === userId })
 		)
 	);
+
+const guestPlayersOf = (answers: readonly CommunityAnswer[]): number =>
+	new Set(answers.filter((answer) => answer.guest).map(({ user }) => user.id))
+		.size;
 
 const PAIR_JOIN = " ⟷ ";
 
@@ -278,10 +287,12 @@ const EMPTY_VIEW = (
 	date: string,
 	climb: ClimbTodayView | null,
 	leaders: readonly CategoryBoard[] = [],
-	players: readonly CommunityVoter[] = []
+	players: readonly CommunityVoter[] = [],
+	guestPlayers = 0
 ): RunCommunityView => ({
 	date,
 	totalPlayers: players.length,
+	guestPlayers,
 	players,
 	leaders,
 	polls: [],
@@ -299,6 +310,9 @@ const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
 		(a, b) => trackPosition(a) - trackPosition(b)
 	);
 };
+
+const guestOf = ({ isGuest }: Pick<ClimberRow, "isGuest">) =>
+	isGuest ? { guest: true } : {};
 
 const closeOf = ({
 	closingBand,
@@ -338,6 +352,7 @@ const fallenOf =
 		lootedByName: row.lootedByName,
 		lootedByPhotoUrl: row.lootedByPhotoUrl,
 		lootedByBorderUrl: row.lootedByBorderUrl,
+		...guestOf(row),
 		...closeOf(row),
 		...standingOf(row, bestCategories.get(row.userId)),
 	});
@@ -436,6 +451,7 @@ const buildClimbToday = async ({
 			pollsIntoGate: row.pollsIntoGate,
 			you: false,
 			build: row.build,
+			...guestOf(row),
 			...closeOf(row),
 			...standingOf(row, bestCategories.get(row.userId)),
 		}));
@@ -547,7 +563,9 @@ export const getRunCommunityService = async ({
 
 		const leaders = boardsFor(await fetchCategoryBoards(userId));
 		const players = playersOf(answers, userId);
-		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders, players);
+		const guestPlayers = guestPlayersOf(answers);
+		if (consumed.length === 0)
+			return EMPTY_VIEW(date, climb, leaders, players, guestPlayers);
 
 		const views = consumed.map((entry, index) => {
 			const poll = pollsById.get(entry.poll_id);
@@ -559,6 +577,7 @@ export const getRunCommunityService = async ({
 		return {
 			date,
 			totalPlayers: players.length,
+			guestPlayers,
 			players,
 			leaders,
 			polls: views,

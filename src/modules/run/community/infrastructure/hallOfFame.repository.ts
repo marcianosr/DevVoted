@@ -30,6 +30,7 @@ export const fetchChampions = async (): Promise<ChampionRow[]> => {
 		.where(
 			and(
 				eq(runsTable.mode, "session"),
+				eq(usersTable.is_guest, false),
 				eq(runsTable.completion_reason, "victory"),
 				isNotNull(runsTable.victory_achieved_at),
 				eq(startedAtGateColumn, 0)

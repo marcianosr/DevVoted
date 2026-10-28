@@ -1,3 +1,8 @@
+import { useNavigate } from "@tanstack/react-router";
+
+import { useViewer } from "~/modules/account/auth/application/useViewer.hook";
+import { AccountLock } from "~/modules/account/auth/presentation/AccountLock.ui";
+import { kantoCommunity } from "~/test/kantoCommunity.factory";
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useHallOfFame } from "~/modules/run/community/application/useHallOfFame.hook";
 import { hallOfFameFor } from "~/modules/run/community/application/hallOfFame.viewmodel";
@@ -14,6 +19,7 @@ import {
 } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+import { CommunityScreen } from "~/modules/run/community/presentation/CommunityScreen.ui";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import type { FileHand } from "~/modules/run/community/application/climbLadder.viewmodel";
 import { auditLabelOf } from "~/modules/run/gate/domain/audit.model";
@@ -32,13 +38,24 @@ const LOAD_FAILED =
 const EMPTY_COMMUNITY: RunCommunityView = {
 	date: "",
 	totalPlayers: 0,
+	guestPlayers: 0,
 	players: [],
 	leaders: [],
 	polls: [],
 	climb: null,
 };
 
-export const RunCommunity = () => {
+const GuestCommunity = () => {
+	const navigate = useNavigate();
+
+	return (
+		<AccountLock onSignIn={() => navigate({ to: "/login" })}>
+			<CommunityScreen {...kantoCommunity()} />
+		</AccountLock>
+	);
+};
+
+const MemberCommunity = () => {
 	const goTo = useRunNavigation();
 	const { view: run } = useTodaysRun();
 	const countdown = useNextPollsCountdown();
@@ -116,4 +133,10 @@ export const RunCommunity = () => {
 		);
 
 	return <CommunityView view={community.view} {...shared} />;
+};
+
+export const RunCommunity = () => {
+	const viewer = useViewer();
+
+	return viewer?.isGuest === true ? <GuestCommunity /> : <MemberCommunity />;
 };

@@ -37,7 +37,7 @@ export const getPlayerCardService = async (
 		return playerCardViewFor(
 			userId,
 			profileFaceOf(profile, pollCounts, pollsAnsweredIn(progress)),
-			gatesClearedBy(profile.ownedSwatchIds),
+			profile.isGuest ? undefined : gatesClearedBy(profile.ownedSwatchIds),
 			climber === null ? null : standingOf(climber, bestCategories.get(userId))
 		);
 	}, "getPlayerCard");

@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { getTodayDateString } from "~/shared/lib/dateUtils";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import {
+	withAuthenticatedUser,
+	withMemberUser,
+} from "~/shared/utils/authorization";
 
 import {
 	getReviewPollsService,
@@ -18,7 +21,7 @@ import { lootFallenRunService } from "~/modules/run/community/application/loot.s
 
 export const getRunCommunity = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser(({ userId }) =>
+		withMemberUser(({ userId }) =>
 			getRunCommunityService({ userId, date: getTodayDateString() })
 		)
 );
@@ -32,7 +35,7 @@ export const getReviewPolls = createServerFn({ method: "GET" })
 			.strict()
 	)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
+		withMemberUser(({ userId }) =>
 			getReviewPollsService({ userId, pollIds: data.pollIds })
 		)
 	);

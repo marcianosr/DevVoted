@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { userConfigUnlocksTable, usersTable } from "~/database/schema";
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
-import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
+import { guestNameOf } from "~/modules/account/auth/domain/guestName.model";
+import {
+	insertUser,
+	promoteGuest,
+} from "~/modules/account/auth/infrastructure/user.repository";
 import {
 	type DrizzleMockState,
 	resetDrizzleMock,
@@ -33,7 +37,7 @@ const insertedRow = {
 const insertedGuestRow = {
 	id: "missingno-from-cinnabar",
 	email: null,
-	display_name: "Guest",
+	display_name: guestNameOf("missingno-from-cinnabar"),
 	photo_url: null,
 	is_guest: true,
 };
@@ -95,7 +99,7 @@ describe("insertUser", () => {
 		expect(mock.valuesCalls[0]).toMatchObject({ display_name: "red" });
 	});
 
-	it("stores a guest with no email, the guest flag and the guest name", async () => {
+	it("stores a guest with no email, the guest flag and a Kanto name drawn from the id", async () => {
 		mock.results.push([insertedGuestRow]);
 
 		await insertUser({
@@ -106,7 +110,7 @@ describe("insertUser", () => {
 
 		expect(mock.valuesCalls[0]).toMatchObject({
 			email: null,
-			display_name: "Guest",
+			display_name: "QuirkyAriados8870",
 			is_guest: true,
 		});
 	});
@@ -122,5 +126,37 @@ describe("insertUser", () => {
 
 		expect(mock.insertTables[1]).toBe(userConfigUnlocksTable);
 		expect(mock.valuesCalls[1]).toHaveLength(FREE_CONFIG_IDS.length);
+	});
+});
+
+describe("promoteGuest", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	it("turns the guest row into an account under its GitHub name, keeping the id", async () => {
+		mock.results.push([
+			{ ...insertedRow, id: "missingno-from-cinnabar", is_guest: false },
+		]);
+
+		const account = await promoteGuest({
+			id: "missingno-from-cinnabar",
+			email: "red@pallet.town",
+			displayName: "Red",
+			photoUrl: null,
+			isGuest: false,
+		});
+
+		expect(mock.updateTables[0]).toBe(usersTable);
+		expect(mock.setCalls[0]).toMatchObject({
+			is_guest: false,
+			email: "red@pallet.town",
+			display_name: "Red",
+		});
+		expect(account).toMatchObject({
+			id: "missingno-from-cinnabar",
+			isGuest: false,
+		});
 	});
 });

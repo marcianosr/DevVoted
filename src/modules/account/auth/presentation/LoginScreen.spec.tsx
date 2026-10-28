@@ -8,6 +8,7 @@ import {
 	heroFor,
 } from "~/modules/account/auth/application/loginDemo.viewmodel";
 import {
+	COPY,
 	type DevSignIn,
 	LoginScreen,
 	type LoginScreenProps,
@@ -137,5 +138,19 @@ describe("LoginScreen", () => {
 			screen.getByRole("button", { name: "Continue with GitHub" })
 		).toBeEnabled();
 		expect(screen.queryByRole("heading", { name: "Login" })).toBeNull();
+	});
+});
+
+describe("a GitHub account that already plays here", () => {
+	it("says so under the press, so the next press is understood as a plain sign-in", () => {
+		render(<LoginScreen {...BASE} identityTaken />);
+
+		expect(screen.getByText(COPY.identityTaken)).toBeInTheDocument();
+	});
+
+	it("says nothing of it on an ordinary visit", () => {
+		render(<LoginScreen {...BASE} />);
+
+		expect(screen.queryByText(COPY.identityTaken)).not.toBeInTheDocument();
 	});
 });
