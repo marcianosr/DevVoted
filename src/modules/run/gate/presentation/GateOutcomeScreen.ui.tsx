@@ -172,11 +172,10 @@ const CoveragePanel = ({
 			</div>
 		)}
 		{payouts === undefined ? null : (
-			<div className={clsx(FOLD_SECTION, FOLD_SECTION_RULED)}>
-				<Typography variant="title" as="h3">
-					{WHAT_EACH_POLL_PAID}
-				</Typography>
-				<PollScores {...payouts} />
+			<div className={FOLD_SECTION_RULED}>
+				<Fold title={WHAT_EACH_POLL_PAID} surface={false}>
+					<PollScores {...payouts} />
+				</Fold>
 			</div>
 		)}
 	</Fold>

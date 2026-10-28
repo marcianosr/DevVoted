@@ -2,6 +2,10 @@ import { clsx } from "clsx";
 
 import { letterAt } from "~/shared/lib/letters";
 
+import {
+	ClimberStack,
+	type ClimberProps,
+} from "~/modules/run/community/presentation/Climber.ui";
 import { CodeSpans } from "~/ui/kanto-theme/CodeText.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { Keycap } from "./Keycap.ui";
@@ -44,7 +48,7 @@ const LINES =
 const LINE = "fill-none stroke-2 text-theme";
 const TILE =
 	"relative flex min-h-14 w-full min-w-0 items-center gap-2 rounded-lg border p-2 text-left text-xs font-bold wrap-break-word transition-colors sm:gap-3 sm:p-3 sm:text-sm";
-const LABEL = "min-w-0";
+const LABEL = "flex min-w-0 flex-col items-start gap-1.5";
 const TILE_IDLE = "border-theme-faint bg-theme-dim";
 const TILE_TONED = "border-theme bg-theme-dim";
 const TILE_PICKABLE = "cursor-pointer hover:bg-theme-raised";
@@ -85,10 +89,18 @@ const VERDICT_GLYPH = {
 } satisfies Record<PairVerdict, string>;
 
 const VERDICT_MARK =
-	"badge-theme ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-theme text-xs leading-none";
+	"badge-theme absolute -top-2 -right-2 inline-flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-theme text-xs leading-none sm:static sm:ml-auto";
 const MISSED_DASH = "4 4";
+const VOTER_FACES = 3;
 
-export type PairTile = { id: string; label: string; verdict?: PairVerdict };
+export type PairVoters = { climbers: readonly ClimberProps[]; count: number };
+
+export type PairTile = {
+	id: string;
+	label: string;
+	verdict?: PairVerdict;
+	voters?: PairVoters;
+};
 
 export type TileLink = { left: string; right: string; verdict?: PairVerdict };
 
@@ -183,6 +195,15 @@ const TileFace = ({ placed }: { placed: PlacedTile }) => (
 		</span>
 		<span className={LABEL}>
 			<CodeSpans text={placed.tile.label} />
+			{placed.tile.voters === undefined ? null : (
+				<ClimberStack
+					climbers={placed.tile.voters.climbers}
+					overflow={
+						placed.tile.voters.count - placed.tile.voters.climbers.length
+					}
+					shown={VOTER_FACES}
+				/>
+			)}
 		</span>
 		{placed.mark === undefined ? null : (
 			<span

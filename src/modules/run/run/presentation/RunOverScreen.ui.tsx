@@ -1,3 +1,4 @@
+import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import {
@@ -9,6 +10,7 @@ import {
 	type CoverageBarProps,
 } from "~/modules/run/build/presentation/CoverageBar.ui";
 import { Figures } from "./Figures.ui";
+import { Fold } from "~/ui/kanto-theme/Fold.ui";
 import {
 	Header,
 	type HeaderProps,
@@ -156,9 +158,9 @@ const CoveragePanel = ({
 const GatesPanel = ({ meta, payouts, total }: RunOverGates) => (
 	<Panel>
 		<Panel.Header label={GATES_TITLE} meta={<Meta reading={meta} />} />
-		<Panel.Body>
+		<Fold title={WHAT_EACH_POLL_PAID} surface={false}>
 			<PollScores {...payouts} />
-		</Panel.Body>
+		</Fold>
 		<Panel.Footer
 			trailing={
 				<>

@@ -128,12 +128,14 @@ describe("GateOutcomeScreen", () => {
 			expect(container.querySelector("div.grid")).not.toBeNull();
 		});
 
-		it("opens every fold when the frame asks for it", () => {
+		it("opens every panel when the frame asks for it", () => {
 			const { container } = renderWithNavRun(
 				<GateOutcomeScreen {...kantoGateOutcomeOpen()} />
 			);
 
-			for (const fold of container.querySelectorAll("details")) {
+			for (const fold of container.querySelectorAll(
+				"details:not(details details)"
+			)) {
 				expect(fold).toHaveAttribute("open");
 			}
 		});
@@ -535,8 +537,19 @@ describe("GateOutcomeScreen's payout history", () => {
 	it("lists what every gate the run has opened paid, inside Coverage", () => {
 		renderWithNavRun(<GateOutcomeScreen {...kantoGatePerfect()} />);
 
-		expect(screen.getByText("Score")).toBeInTheDocument();
+		expect(screen.getByText("Score breakdown")).toBeInTheDocument();
 		expect(screen.getByLabelText(/^Pallet/)).toBeInTheDocument();
+	});
+
+	it("folds the score breakdown shut while Coverage stands open", () => {
+		renderWithNavRun(<GateOutcomeScreen {...kantoGatePerfect()} />);
+
+		expect(
+			screen.getByText("Score breakdown").closest("details")
+		).not.toHaveAttribute("open");
+		expect(screen.getByText("Coverage").closest("details")).toHaveAttribute(
+			"open"
+		);
 	});
 
 	it("sets the score apart in a section of its own, ruled off from the bar", () => {
@@ -544,7 +557,9 @@ describe("GateOutcomeScreen's payout history", () => {
 			<GateOutcomeScreen {...kantoGatePerfect()} />
 		);
 
-		const section = screen.getByText("Score").parentElement;
+		const section = screen
+			.getByText("Score breakdown")
+			.closest("details")?.parentElement;
 		expect(section).toHaveClass("border-t");
 		expect(container.querySelector(".coverage-bar")).not.toBeNull();
 		expect(section?.querySelector(".coverage-bar")).toBeNull();
@@ -564,7 +579,10 @@ describe("GateOutcomeScreen's payout history", () => {
 			/>
 		);
 
-		const score = screen.getByRole("heading", { level: 3, name: "Score" });
+		const score = screen.getByRole("heading", {
+			level: 3,
+			name: "Score breakdown",
+		});
 		const accuracy = screen.getByRole("heading", {
 			level: 3,
 			name: "Accuracy",
@@ -580,6 +598,6 @@ describe("GateOutcomeScreen's payout history", () => {
 			<GateOutcomeScreen {...kantoGatePerfect()} payouts={undefined} />
 		);
 
-		expect(screen.queryByText("Score")).toBeNull();
+		expect(screen.queryByText("Score breakdown")).toBeNull();
 	});
 });

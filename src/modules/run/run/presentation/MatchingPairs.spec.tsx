@@ -2,6 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import { GYM_LEADERS } from "~/test/kanto";
+
 import {
 	MatchingPairs,
 	type MatchingPairsProps,
@@ -199,5 +201,26 @@ describe("MatchingPairs", () => {
 		renderPairs({ onPick: undefined });
 
 		expect(screen.queryByRole("button", { name: "Check pairs" })).toBeNull();
+	});
+
+	it("shows the faces of who matched a pair on its right tile", () => {
+		renderPairs({
+			right: [
+				{
+					...RIGHT[0],
+					voters: { climbers: [{ name: GYM_LEADERS[0].name }], count: 1 },
+				},
+				RIGHT[1],
+			],
+			onPick: undefined,
+		});
+
+		const brock = screen.getByTitle(GYM_LEADERS[0].name);
+		expect(
+			screen.getByText("the next sibling").closest("[data-tile]")
+		).toContainElement(brock);
+		expect(
+			screen.getByText("a direct child").closest("[data-tile]")
+		).not.toContainElement(brock);
 	});
 });

@@ -17,6 +17,7 @@ import { answeredPairsFor } from "~/modules/run/run/application/pollScreen.viewm
 import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
 import type { OptionVotes } from "~/modules/run/community/application/communityScreen.viewmodel";
 import type { AuthorProps } from "~/modules/polls/poll/presentation/Author.ui";
+import type { PairTile } from "~/modules/run/run/presentation/MatchingPairs.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
@@ -65,21 +66,39 @@ const votersOf = (
 		: { climbers: vote.climbers, count: vote.count };
 };
 
+const withPairVoters = (
+	tile: PairTile,
+	votes: readonly OptionVotes[] | undefined
+): PairTile => {
+	const vote = votes?.find((entry) => entry.pair?.right === tile.label);
+	return vote === undefined
+		? tile
+		: { ...tile, voters: { climbers: vote.climbers, count: vote.count } };
+};
+
 const pairsCardFor = (
 	answer: GateAnswer,
-	pairs: readonly AnsweredPair[]
-): QuestionProps => ({
-	answerType: answer.answerType,
-	question: answer.question,
-	...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
-	options: [],
-	pairs: answeredPairsFor(pairs, answer.pollId),
-});
+	pairs: readonly AnsweredPair[],
+	pollVotes: readonly OptionVotes[] | undefined
+): QuestionProps => {
+	const board = answeredPairsFor(pairs, answer.pollId);
+	return {
+		answerType: answer.answerType,
+		question: answer.question,
+		...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
+		options: [],
+		pairs: {
+			...board,
+			right: board.right.map((tile) => withPairVoters(tile, pollVotes)),
+		},
+	};
+};
 
 const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
-	if (answer.pairs !== undefined) return pairsCardFor(answer, answer.pairs);
 	const pollVotes =
 		answer.pollId === undefined ? undefined : votes.get(answer.pollId);
+	if (answer.pairs !== undefined)
+		return pairsCardFor(answer, answer.pairs, pollVotes);
 	return {
 		answerType: answer.answerType,
 		question: answer.question,
