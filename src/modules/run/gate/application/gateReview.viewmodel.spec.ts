@@ -104,4 +104,32 @@ describe("a pairs poll on the review", () => {
 	it("tallies the pairs the player matched", () => {
 		expect(rowOf(PAIRED)?.tally).toBe("1 of 2 matched");
 	});
+
+	it("puts who matched each pair on that pair's right tile", () => {
+		const row = reviewPropsFor({
+			gate: GATE,
+			answers: [{ ...PAIRED, pollId: "10" }],
+			votes: new Map([
+				[
+					"10",
+					[
+						{
+							label: "div > div ⟷ a direct child",
+							pair: { left: "div > div", right: "a direct child" },
+							count: 1,
+							climbers: [{ name: "Misty" }],
+						},
+					],
+				],
+			]),
+		}).rows[0];
+		const tileOf = (label: string) =>
+			row?.card.pairs?.right.find((tile) => tile.label === label);
+
+		expect(tileOf("a direct child")?.voters).toEqual({
+			climbers: [{ name: "Misty" }],
+			count: 1,
+		});
+		expect(tileOf("the next sibling")?.voters).toBeUndefined();
+	});
 });

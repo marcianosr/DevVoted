@@ -219,3 +219,13 @@ describe("RunOverScreen", () => {
 		expect(screen.getByText(/every gate held/)).toBeInTheDocument();
 	});
 });
+
+describe("RunOverScreen's gate by gate panel", () => {
+	it("folds the score breakdown shut under the panel's total", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		expect(
+			screen.getByText("Score breakdown").closest("details")
+		).not.toHaveAttribute("open");
+	});
+});

@@ -6,6 +6,7 @@ import {
 	ConfigChip,
 	type ConfigChipProps,
 } from "~/modules/run/config/presentation/ConfigChip.ui";
+import { Figures } from "~/modules/run/run/presentation/Figures.ui";
 import type { IconName } from "~/ui/kanto-theme/Icon.ui";
 import { Meter, type MeterProps } from "~/ui/kanto-theme/Meter.ui";
 import { type Redactable, SealedFigure } from "~/ui/kanto-theme/Redaction.ui";
@@ -135,7 +136,9 @@ const Row = ({
 				{row.notes === undefined ? null : (
 					<ul className={NOTES}>
 						{row.notes.map((note) => (
-							<li key={note}>{note}</li>
+							<li key={note}>
+								<Figures text={note} />
+							</li>
 						))}
 					</ul>
 				)}
