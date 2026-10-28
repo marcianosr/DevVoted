@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 
-import { kantoClimbMap } from "~/test/kantoCommunity.factory";
+import {
+	kantoClimbMap,
+	kantoCrowdedClimbMap,
+} from "~/test/kantoCommunity.factory";
 
 import { ClimbMap } from "./ClimbMap.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
@@ -20,6 +23,16 @@ export const TheLadder: Story = {
 		<div className="[--screen-floor:16rem]">
 			<Screen theme="lavender">
 				<ClimbMap {...kantoClimbMap()} />
+			</Screen>
+		</div>
+	),
+};
+
+export const ACrowdedStart: Story = {
+	render: () => (
+		<div className="[--screen-floor:16rem]">
+			<Screen theme="lavender">
+				<ClimbMap {...kantoCrowdedClimbMap()} />
 			</Screen>
 		</div>
 	),

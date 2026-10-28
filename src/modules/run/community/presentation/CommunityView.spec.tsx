@@ -185,6 +185,7 @@ describe("CommunityView", () => {
 		date: "2026-05-13",
 		totalPlayers: 3,
 		guestPlayers: 0,
+		restingPlayers: 0,
 		players: [],
 		leaders: [
 			{

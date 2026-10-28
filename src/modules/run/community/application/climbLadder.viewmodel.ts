@@ -20,6 +20,7 @@ import type {
 } from "~/modules/run/community/presentation/ClimberCard.ui";
 import {
 	gateOf,
+	isRestingClimber,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
@@ -58,6 +59,11 @@ export type FileHand = {
 	readonly refused?: { readonly targetRunId: number; readonly reason: string };
 };
 
+export const REST_COPY = {
+	lastPlayed: (name: string, days: number) =>
+		`${name} · last played ${days} days ago`,
+} as const;
+
 export type ClimberMark = "perfect" | "shaky";
 
 export type LadderClimber = {
@@ -69,6 +75,7 @@ export type LadderClimber = {
 	rival: boolean;
 	rescued: boolean;
 	mark?: ClimberMark;
+	resting?: boolean;
 	tooltip?: string;
 	card?: ClimberCardProps;
 };
@@ -91,6 +98,20 @@ const byDepthThenId = (
 	a: { pollsIntoGate: number; id: string },
 	b: { pollsIntoGate: number; id: string }
 ): number => b.pollsIntoGate - a.pollsIntoGate || a.id.localeCompare(b.id);
+
+const byRestThenDepth = (a: ClimbClimber, b: ClimbClimber): number =>
+	Number(isRestingClimber(a)) - Number(isRestingClimber(b)) ||
+	byDepthThenId(a, b);
+
+const restOf = (
+	climber: ClimbClimber
+): Pick<LadderClimber, "resting" | "tooltip"> =>
+	climber.idleDays === undefined || !isRestingClimber(climber)
+		? {}
+		: {
+				resting: true,
+				tooltip: REST_COPY.lastPlayed(climber.displayName, climber.idleDays),
+			};
 
 const markOf = (band: CoverageBandId | undefined): ClimberMark | undefined =>
 	band === "perfect" || band === "shaky" ? band : undefined;
@@ -272,16 +293,17 @@ export const ladderFor = (
 		best: bestGate === swatch.gate,
 		climbers: [...climb.climbers]
 			.filter((climber) => climber.gate === swatch.gate)
-			.sort(byDepthThenId)
-			.map((climber) =>
-				chipOf(
+			.sort(byRestThenDepth)
+			.map((climber) => ({
+				...chipOf(
 					climber,
 					rivalIds,
 					climber.you,
 					undefined,
 					climber.you ? undefined : fileOf(climber.id, filing)
-				)
-			),
+				),
+				...restOf(climber),
+			})),
 		fallen: [...climb.fallen]
 			.filter((fallen) => fallen.gate === swatch.gate)
 			.sort(byDepthThenId)

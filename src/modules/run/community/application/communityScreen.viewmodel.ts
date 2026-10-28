@@ -45,6 +45,7 @@ import {
 	type PlayerCardView,
 	playerCardFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
+import { RESTING_AFTER_DAYS } from "~/modules/run/community/domain/climbMap.model";
 
 const COPY = {
 	title: "Community",
@@ -53,6 +54,7 @@ const COPY = {
 	recordsTitle: "Today’s records",
 	answeredToday: "Answered today",
 	guestsHint: "playing without an account",
+	restingHint: `no answer for ${RESTING_AFTER_DAYS} days or more`,
 	unheldRecord: "—",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
@@ -221,8 +223,17 @@ const guestStat = (guestPlayers: number): CommunityStat => ({
 	hint: COPY.guestsHint,
 });
 
+const restingStat = (restingPlayers: number): CommunityStat => ({
+	icon: "clock",
+	label: `${restingPlayers} resting`,
+	hint: COPY.restingHint,
+});
+
 export const statsFor = (
-	view: Pick<RunCommunityView, "totalPlayers" | "guestPlayers">
+	view: Pick<
+		RunCommunityView,
+		"totalPlayers" | "guestPlayers" | "restingPlayers"
+	>
 ): CommunityStat[] => [
 	{
 		icon: "community",
@@ -230,6 +241,7 @@ export const statsFor = (
 		hint: COPY.answeredToday,
 	},
 	...(view.guestPlayers === 0 ? [] : [guestStat(view.guestPlayers)]),
+	...(view.restingPlayers === 0 ? [] : [restingStat(view.restingPlayers)]),
 ];
 
 export type FallenPress = (userId: string) => (() => void) | undefined;

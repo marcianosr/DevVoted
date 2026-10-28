@@ -8,9 +8,10 @@ import type { ClimbMapProps } from "~/modules/run/community/presentation/ClimbMa
 import type { ClimberCardProps } from "~/modules/run/community/presentation/ClimberCard.ui";
 import type { HallOfFameProps } from "~/modules/run/community/presentation/HallOfFame.ui";
 import type { StandingProps } from "~/modules/account/profile/presentation/Standing.ui";
-import type {
-	LadderClimber,
-	LadderGate,
+import {
+	type LadderClimber,
+	type LadderGate,
+	REST_COPY,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import {
@@ -206,6 +207,28 @@ const ladderGates = (): LadderGate[] =>
 	}));
 
 export const kantoClimbMap = (): ClimbMapProps => ({ gates: ladderGates() });
+
+const resting = (climber: ClimberProps, days: number): LadderClimber =>
+	ladderChip(climber, {
+		resting: true,
+		tooltip: REST_COPY.lastPlayed(climber.name, days),
+	});
+
+const CROWDED_START: readonly LadderClimber[] = [
+	withCard(ladderChip(oak), { standing: standingAt(0, 3) }),
+	withCard(ladderChip(blaine), { standing: standingAt(0, 2) }),
+	withCard(ladderChip(giovanni, { rival: true })),
+	withCard(ladderChip(sabrina)),
+	withCard(resting(koga, 4)),
+	withCard(resting(erika, 9)),
+	withCard(resting(surge, 23)),
+];
+
+export const kantoCrowdedClimbMap = (): ClimbMapProps => ({
+	gates: ladderGates().map((gate) =>
+		gate.gate === 0 ? { ...gate, climbers: CROWDED_START } : gate
+	),
+});
 
 export const kantoClimberCard = (
 	over: Partial<ClimberCardProps> = {}
@@ -422,6 +445,11 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 			{ icon: "community", label: "1,204", hint: "climbers reviewing" },
 			{ icon: "gate", label: "37", hint: "gates cleared today" },
 			{ icon: "closed", label: "2", hint: "runs closed" },
+			{
+				icon: "clock",
+				label: "3 resting",
+				hint: "no answer for 3 days or more",
+			},
 		],
 		shop: { label: COMMUNITY_SHOP_LABEL, onPress: () => {} },
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },

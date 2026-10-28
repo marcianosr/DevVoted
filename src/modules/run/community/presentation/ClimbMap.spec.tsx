@@ -109,27 +109,56 @@ describe("ClimbMap", () => {
 		expect(screen.getByTitle("Brock")).toBeInTheDocument();
 	});
 
-	it("counts the crowd it cannot draw rather than drawing every chip", () => {
+	const CROWDED_START = gate({
+		gate: 0,
+		climbers: [
+			chip("A"),
+			chip("B"),
+			chip("C"),
+			chip("D"),
+			chip("E"),
+			chip("F"),
+		],
+	});
+
+	it("folds a crowded gate behind a count, four chips showing", () => {
+		render(<ClimbMap gates={[CROWDED_START]} />);
+
+		expect(
+			screen.getByRole("button", { name: "show 2 more players" })
+		).toHaveTextContent("+2");
+		expect(screen.getByTitle("D")).toBeInTheDocument();
+		expect(screen.queryByTitle("F")).toBeNull();
+	});
+
+	it("unfolds the whole crowd on a press, and folds it again on the next", async () => {
+		const user = userEvent.setup();
+		render(<ClimbMap gates={[CROWDED_START]} />);
+
+		await user.click(
+			screen.getByRole("button", { name: "show 2 more players" })
+		);
+		expect(screen.getByTitle("F")).toBeInTheDocument();
+
+		await user.click(screen.getByRole("button", { name: COPY.showFewer }));
+		expect(screen.queryByTitle("F")).toBeNull();
+	});
+
+	it("dims a resting climber and titles the chip with when they last played", () => {
+		const tooltip = "Oak · last played 5 days ago";
 		render(
 			<ClimbMap
 				gates={[
 					gate({
 						gate: 0,
-						climbers: [
-							chip("A"),
-							chip("B"),
-							chip("C"),
-							chip("D"),
-							chip("E"),
-							chip("F"),
-						],
+						climbers: [chip("Oak", { resting: true, tooltip }), chip("Brock")],
 					}),
 				]}
 			/>
 		);
 
-		expect(screen.getByText("+2")).toBeInTheDocument();
-		expect(screen.queryByTitle("F")).toBeNull();
+		expect(screen.getByTitle(tooltip)).toHaveClass("opacity-40");
+		expect(screen.getByTitle("Brock")).not.toHaveClass("opacity-40");
 	});
 
 	it("parks the runs a gate killed today in a lane of their own", () => {
@@ -282,5 +311,6 @@ describe("ClimbMap", () => {
 		expect(screen.getByText(COPY.you)).toBeInTheDocument();
 		expect(screen.getByText(COPY.rival)).toBeInTheDocument();
 		expect(screen.getByText(COPY.fallen)).toBeInTheDocument();
+		expect(screen.getByText(COPY.resting)).toBeInTheDocument();
 	});
 });

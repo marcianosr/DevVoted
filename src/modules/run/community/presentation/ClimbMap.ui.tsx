@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { clsx } from "clsx";
 
@@ -7,7 +7,12 @@ import type {
 	LadderGate,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 
-import { Climber, PlayerCardHold } from "./Climber.ui";
+import {
+	Climber,
+	COPY as CLIMBER_COPY,
+	MORE_PRESS,
+	PlayerCardHold,
+} from "./Climber.ui";
 import { ClimberCard, type ClimberCardProps } from "./ClimberCard.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
@@ -16,6 +21,9 @@ export const COPY = {
 	you: "you",
 	rival: "rival",
 	fallen: "fallen",
+	resting: "resting",
+	showFewer: "show fewer",
+	less: "less",
 	dismiss: "Dismiss",
 } as const;
 
@@ -38,7 +46,6 @@ const RUNG_UNCHARTED = "opacity-35";
 const NAME = "text-center";
 const PB = "flex h-4 items-center gap-1 text-xs font-bold text-saffron";
 const STACK = "flex flex-wrap items-center justify-center gap-1";
-const OVERFLOW = "text-xs text-theme-muted tabular-nums";
 const FALLEN_LANE =
 	"flex flex-wrap items-center justify-center gap-1 border-t border-theme-faint pt-1.5";
 
@@ -130,6 +137,26 @@ const Chip = ({
 	);
 };
 
+const FoldPress = ({
+	hidden,
+	open,
+	onPress,
+}: {
+	hidden: number;
+	open: boolean;
+	onPress: () => void;
+}) => (
+	<button
+		type="button"
+		aria-expanded={open}
+		aria-label={open ? COPY.showFewer : CLIMBER_COPY.showMore(hidden)}
+		className={MORE_PRESS}
+		onClick={onPress}
+	>
+		{open ? COPY.less : `+${hidden}`}
+	</button>
+);
+
 const LegendDot = ({
 	className,
 	word,
@@ -148,6 +175,7 @@ const Legend = () => (
 		<LegendDot className="bg-viridian" word={COPY.you} />
 		<LegendDot className="bg-vermillion" word={COPY.rival} />
 		<LegendDot className="bg-pewter" word={COPY.fallen} />
+		<LegendDot className="bg-pewter opacity-40" word={COPY.resting} />
 	</div>
 );
 
@@ -161,6 +189,13 @@ export const ClimbMap = ({
 	const currentColumn = useRef<HTMLLIElement>(null);
 	const currentGate = gates.find((gate) => gate.current)?.gate;
 	const opened = openedIn(gates, openId);
+	const [unfolded, setUnfolded] = useState<ReadonlySet<number>>(new Set());
+	const toggleFold = (gate: number) =>
+		setUnfolded((current) => {
+			const next = new Set(current);
+			if (!next.delete(gate)) next.add(gate);
+			return next;
+		});
 
 	useEffect(() => {
 		const track = scroller.current;
@@ -176,8 +211,11 @@ export const ClimbMap = ({
 		<div className={ROOT}>
 			<ul className={SCROLLER} ref={scroller}>
 				{gates.map((gate) => {
-					const shown = gate.climbers.slice(0, STACK_MAX);
-					const overflow = gate.climbers.length - shown.length;
+					const open = unfolded.has(gate.gate);
+					const shown = open
+						? gate.climbers
+						: gate.climbers.slice(0, STACK_MAX);
+					const hidden = gate.climbers.length - STACK_MAX;
 
 					return (
 						<li
@@ -220,12 +258,17 @@ export const ClimbMap = ({
 											key={climber.id}
 											climber={climber}
 											pressKey={climber.id}
+											dimmed={climber.resting === true}
 											open={climber.id === openId}
 											onInspect={onInspect}
 										/>
 									))}
-									{overflow === 0 ? null : (
-										<span className={OVERFLOW}>{`+${overflow}`}</span>
+									{hidden <= 0 ? null : (
+										<FoldPress
+											hidden={hidden}
+											open={open}
+											onPress={() => toggleFold(gate.gate)}
+										/>
 									)}
 								</span>
 							)}
