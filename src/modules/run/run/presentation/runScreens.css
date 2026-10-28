@@ -161,7 +161,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
 	.seal-wiggle {
 		animation: none;
 	}

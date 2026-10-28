@@ -184,6 +184,7 @@ describe("CommunityView", () => {
 	const view: RunCommunityView = {
 		date: "2026-05-13",
 		totalPlayers: 3,
+		guestPlayers: 0,
 		players: [],
 		leaders: [
 			{

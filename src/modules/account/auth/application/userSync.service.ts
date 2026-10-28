@@ -3,6 +3,7 @@ import {
 	findUserByEmail,
 	findUserById,
 	insertUser,
+	promoteGuest,
 	touchLastSeen,
 } from "~/modules/account/auth/infrastructure/user.repository";
 import { reportHandledFailure } from "~/shared/utils/errorReporting";
@@ -17,13 +18,18 @@ const rememberVisit = async (userId: string): Promise<void> => {
 	}
 };
 
+const hasJustLinkedAnIdentity = (stored: AccountUser, session: User): boolean =>
+	stored.isGuest && !session.isGuest;
+
 export const ensureUserExists = async (
 	userData: User
 ): Promise<AccountUser> => {
 	const existing = await findUserById(userData.id);
 	if (existing) {
 		await rememberVisit(existing.id);
-		return existing;
+		return hasJustLinkedAnIdentity(existing, userData)
+			? promoteGuest(userData)
+			: existing;
 	}
 
 	try {
@@ -33,7 +39,9 @@ export const ensureUserExists = async (
 			userId: userData.id,
 		});
 
-		const byEmail = await findUserByEmail(userData.email);
+		const byEmail = userData.email
+			? await findUserByEmail(userData.email)
+			: undefined;
 		if (byEmail) return byEmail;
 
 		throw error;

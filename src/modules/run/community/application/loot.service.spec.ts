@@ -69,6 +69,7 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 	closes: [],
 	auditSchedule: {},
 	warmBootKb: 0,
+	isGuest: false,
 	lootedById: null,
 	lootedByName: null,
 	lootedByPhotoUrl: null,
@@ -79,6 +80,7 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 
 const take = () =>
 	lootFallenRunService({
+		isGuest: false,
 		userId: MISTY,
 		date: DATE,
 		fallenRunId: FALLEN_RUN_ID,
@@ -195,5 +197,26 @@ describe("lootFallenRunService", () => {
 		await settle(tx, before, before);
 
 		expect(loot.claimFallenRun).not.toHaveBeenCalled();
+	});
+});
+
+describe("a guest looting", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(runs.findActiveSessionRun).mockResolvedValue(LIVE_RUN);
+		vi.mocked(climbers.fetchFallenRun).mockResolvedValue(corpse());
+	});
+
+	it("is told to sign in and takes nothing", async () => {
+		const result = await lootFallenRunService({
+			isGuest: true,
+			userId: MISTY,
+			date: DATE,
+			fallenRunId: FALLEN_RUN_ID,
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.success ? "" : result.error).toContain("Sign in to loot");
+		expect(dispatchRunActionService).not.toHaveBeenCalled();
 	});
 });

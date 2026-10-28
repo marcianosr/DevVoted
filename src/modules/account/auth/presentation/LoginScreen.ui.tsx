@@ -24,7 +24,11 @@ export const COPY = {
 	question: "How far can you run?",
 	github: "Continue with GitHub",
 	githubPending: "Redirecting…",
+	guest: "Play today without an account",
+	guestPending: "Starting…",
 	wiki: "Read how this game works",
+	identityTaken:
+		"That GitHub account already plays here. Continue to sign into it; today's guest run stays behind.",
 	coverage: "coverage",
 	method: "Sign in with",
 	email: "Email",
@@ -60,7 +64,7 @@ const CARD_COUNTER = "ml-auto";
 const CARD_FOOTER = "flex w-full items-center gap-3";
 const FOOTER_BAR = "min-w-0 grow";
 
-export type GithubPressProps = { pending: boolean; onPress: () => void };
+export type PendingPress = { pending: boolean; onPress: () => void };
 
 export type DevSignIn = {
 	method: SignInMethod;
@@ -72,14 +76,16 @@ export type LoginScreenProps = {
 	theme: KantoColor;
 	hero: LoginHero;
 	card: LoginDemoCard;
-	github: GithubPressProps;
+	github: PendingPress;
+	guest?: PendingPress;
+	identityTaken?: boolean;
 	wikiHref: string;
 	devSignIn?: DevSignIn;
 };
 
 const GithubPress = ({ github }: Pick<LoginScreenProps, "github">) => (
 	<Button
-		size="xl"
+		size="lg"
 		width="fill"
 		tone="primary"
 		icon="github"
@@ -87,6 +93,17 @@ const GithubPress = ({ github }: Pick<LoginScreenProps, "github">) => (
 		label={github.pending ? COPY.githubPending : COPY.github}
 		disabled={github.pending}
 		onPress={github.onPress}
+	/>
+);
+
+const GuestPress = ({ guest }: { guest: PendingPress }) => (
+	<Button
+		size="lg"
+		width="fill"
+		tone="action"
+		label={guest.pending ? COPY.guestPending : COPY.guest}
+		disabled={guest.pending}
+		onPress={guest.onPress}
 	/>
 );
 
@@ -116,9 +133,14 @@ const DevCorner = ({ devSignIn }: { devSignIn: DevSignIn }) => (
 const Hero = ({
 	hero,
 	github,
+	guest,
+	identityTaken,
 	wikiHref,
 	devSignIn,
-}: Pick<LoginScreenProps, "hero" | "github" | "wikiHref" | "devSignIn">) => (
+}: Pick<
+	LoginScreenProps,
+	"hero" | "github" | "guest" | "identityTaken" | "wikiHref" | "devSignIn"
+>) => (
 	<div className={HERO}>
 		<h1 className={HEADLINE}>
 			{COPY.headline}
@@ -135,7 +157,11 @@ const Hero = ({
 		</div>
 		<div className={PRESS}>
 			<SignIn github={github} devSignIn={devSignIn} />
+			{guest === undefined ? null : <GuestPress guest={guest} />}
 			<div className={UNDER_PRESS}>
+				{identityTaken ? (
+					<Typography variant="caption">{COPY.identityTaken}</Typography>
+				) : null}
 				<Typography variant="caption">
 					<Link href={wikiHref}>{COPY.wiki}</Link>
 				</Typography>
@@ -159,10 +185,11 @@ const DemoCard = ({ card }: Pick<LoginScreenProps, "card">) => (
 		</div>
 		<Panel.Body>
 			<Question
-				answerType="single"
+				answerType={card.answerType}
 				question={card.question}
 				options={card.options}
 				pickedIds={card.pickedIds}
+				pairs={card.pairs}
 			/>
 		</Panel.Body>
 		<Panel.Footer>
@@ -183,6 +210,8 @@ export const LoginScreen = ({
 	hero,
 	card,
 	github,
+	guest,
+	identityTaken,
 	wikiHref,
 	devSignIn,
 }: LoginScreenProps) => (
@@ -191,6 +220,8 @@ export const LoginScreen = ({
 			<Hero
 				hero={hero}
 				github={github}
+				guest={guest}
+				identityTaken={identityTaken}
 				wikiHref={wikiHref}
 				devSignIn={devSignIn}
 			/>

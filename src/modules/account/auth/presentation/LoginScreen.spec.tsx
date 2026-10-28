@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,6 +8,7 @@ import {
 	heroFor,
 } from "~/modules/account/auth/application/loginDemo.viewmodel";
 import {
+	COPY,
 	type DevSignIn,
 	LoginScreen,
 	type LoginScreenProps,
@@ -17,6 +19,7 @@ const BASE: LoginScreenProps = {
 	hero: heroFor(),
 	card: demoCardFor(FIRST_STEP),
 	github: { pending: false, onPress: vi.fn() },
+	guest: { pending: false, onPress: vi.fn() },
 	wikiHref: "/wiki",
 };
 
@@ -49,6 +52,33 @@ describe("LoginScreen", () => {
 		expect(
 			screen.getByRole("link", { name: "Read how this game works" })
 		).toHaveAttribute("href", "/wiki");
+	});
+
+	it("offers today's five without an account and starts it on press", async () => {
+		const onPress = vi.fn();
+		render(<LoginScreen {...BASE} guest={{ pending: false, onPress }} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Play today without an account" })
+		);
+
+		expect(onPress).toHaveBeenCalledOnce();
+	});
+
+	it("leaves out the guest press for a visitor who already plays as a guest", () => {
+		render(<LoginScreen {...BASE} guest={undefined} />);
+
+		expect(
+			screen.queryByRole("button", { name: "Play today without an account" })
+		).not.toBeInTheDocument();
+	});
+
+	it("disables the guest press and reads Starting while the guest session opens", () => {
+		render(
+			<LoginScreen {...BASE} guest={{ pending: true, onPress: vi.fn() }} />
+		);
+
+		expect(screen.getByRole("button", { name: "Starting…" })).toBeDisabled();
 	});
 
 	it("disables the press and reads Redirecting while the redirect is pending", () => {
@@ -108,5 +138,19 @@ describe("LoginScreen", () => {
 			screen.getByRole("button", { name: "Continue with GitHub" })
 		).toBeEnabled();
 		expect(screen.queryByRole("heading", { name: "Login" })).toBeNull();
+	});
+});
+
+describe("a GitHub account that already plays here", () => {
+	it("says so under the press, so the next press is understood as a plain sign-in", () => {
+		render(<LoginScreen {...BASE} identityTaken />);
+
+		expect(screen.getByText(COPY.identityTaken)).toBeInTheDocument();
+	});
+
+	it("says nothing of it on an ordinary visit", () => {
+		render(<LoginScreen {...BASE} />);
+
+		expect(screen.queryByText(COPY.identityTaken)).not.toBeInTheDocument();
 	});
 });

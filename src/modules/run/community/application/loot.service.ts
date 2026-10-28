@@ -25,6 +25,7 @@ import {
 const NOT_FALLEN = "No run fell there today";
 
 const REFUSALS: Record<LootRefusal, string> = {
+	guest: "Sign in to loot other players",
 	"already-looted": ALREADY_LOOTED,
 	"own-run": "You cannot loot your own run",
 	"nothing-left": "That run banked everything it was holding",
@@ -44,10 +45,12 @@ const spoils = async ({
 	userId,
 	date,
 	fallenRunId,
+	isGuest,
 }: {
 	userId: string;
 	date: string;
 	fallenRunId: number;
+	isGuest: boolean;
 }): Promise<number> => {
 	const fallen = await fetchFallenRun(fallenRunId, date);
 	if (!fallen) throw new Error(NOT_FALLEN);
@@ -60,7 +63,7 @@ const spoils = async ({
 			lootedById: fallen.lootedById,
 			lootKb,
 		},
-		{ id: userId, hasLiveRun: run !== null }
+		{ id: userId, hasLiveRun: run !== null, guest: isGuest }
 	);
 	if (refusal !== null) throw new Error(REFUSALS[refusal]);
 
@@ -80,6 +83,7 @@ export const lootFallenRunService = async (args: {
 	userId: string;
 	date: string;
 	fallenRunId: number;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> => {
 	const take = await handleApiOperation(() => spoils(args), "lootFallenRun");
 	if (!take.success) return take;
@@ -89,5 +93,6 @@ export const lootFallenRunService = async (args: {
 		date: args.date,
 		action: { type: "loot", kb: take.data },
 		settle: claiming(args.userId, args.date, args.fallenRunId, take.data),
+		isGuest: args.isGuest,
 	});
 };

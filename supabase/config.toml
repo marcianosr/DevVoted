@@ -135,9 +135,9 @@ refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
-enable_anonymous_sign_ins = false
+enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
-enable_manual_linking = false
+enable_manual_linking = true
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
 minimum_password_length = 6
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
@@ -347,3 +347,21 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[remotes.production]
+project_id = "smrkmigjsnhrhwrxobjc"
+
+[remotes.production.api]
+schemas = ["public"]
+
+[remotes.production.auth]
+site_url = "https://devvoted.dev"
+additional_redirect_urls = ["http://localhost:3005/auth/callback", "https://devvoted-tanstack.vercel.app/auth/callback", "https://devvoted.dev/**", "https://www.devvoted.dev/auth/callback"]
+
+[remotes.production.auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

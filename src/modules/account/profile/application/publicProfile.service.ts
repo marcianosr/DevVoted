@@ -157,7 +157,7 @@ export const getPublicProfileService = async (userId: string) =>
 			fetchBestCategories([userId]),
 			fetchBestStreakOf(userId),
 		]);
-		if (!profile) throw new Error("User not found");
+		if (!profile || profile.isGuest) throw new Error("User not found");
 
 		const entries = runHistory(runRows);
 

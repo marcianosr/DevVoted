@@ -214,7 +214,7 @@ const cardOf = (
 	return {
 		...playerCardFor(playerCardViewOf(entry)),
 		name: chip.name,
-		profileHref: profilePathFor(entry.id),
+		...(entry.guest === true ? {} : { profileHref: profilePathFor(entry.id) }),
 		you: chip.you,
 		rival: chip.rival,
 		perfect: chip.mark === "perfect",

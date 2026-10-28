@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { saveLookService } from "~/modules/account/profile/application/look.service";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import { withMemberUser } from "~/shared/utils/authorization";
 
 const look = z.object({
 	borderId: z.string().min(1).nullable(),
@@ -13,5 +13,5 @@ const look = z.object({
 export const saveLook = createServerFn({ method: "POST" })
 	.validator(look)
 	.handler(({ data }) =>
-		withAuthenticatedUser(({ userId }) => saveLookService(userId, data))
+		withMemberUser(({ userId }) => saveLookService(userId, data))
 	);

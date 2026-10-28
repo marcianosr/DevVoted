@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
+import { isMemberOnlyPath } from "~/shared/lib/memberPath";
 import { Login } from "~/modules/account/auth/presentation/Login.component";
 import { TitleAnnouncement } from "~/modules/account/profile/presentation/TitleAnnouncement.component";
 import { PollApprovedAnnouncement } from "~/modules/polls/authoring/presentation/PollApprovedAnnouncement.component";
@@ -26,8 +27,11 @@ const isNotAuthenticated = (error: unknown) =>
 	error instanceof Error && error.message === NOT_AUTHENTICATED;
 
 export const Route = createFileRoute("/_authed")({
-	beforeLoad: ({ context }) => {
+	beforeLoad: ({ context, location }) => {
 		if (!context.user) {
+			throw new Error(NOT_AUTHENTICATED);
+		}
+		if (context.user.isGuest && isMemberOnlyPath(location.pathname)) {
 			throw new Error(NOT_AUTHENTICATED);
 		}
 	},

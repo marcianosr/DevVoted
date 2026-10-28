@@ -65,6 +65,7 @@ export const fireAuditService = async (args: {
 	userId: string;
 	date: string;
 	targetRunId: number;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> => {
 	const aimed = await handleApiOperation(() => aim(args), "fireAudit");
 	if (!aimed.success) return aimed;
@@ -74,5 +75,6 @@ export const fireAuditService = async (args: {
 		date: args.date,
 		action: { type: "fire-audit" },
 		settle: filing(args.userId, args.date, aimed.data),
+		isGuest: args.isGuest,
 	});
 };

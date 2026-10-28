@@ -55,3 +55,11 @@ describe("who may take a fallen run's leftovers", () => {
 		).toBe("already-looted");
 	});
 });
+
+describe("a guest at a corpse", () => {
+	it("is refused before anything about the corpse is weighed", () => {
+		expect(
+			lootRefusalOf(corpse({ lootedById: ASH }), climber({ guest: true }))
+		).toBe("guest");
+	});
+});

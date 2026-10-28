@@ -1,5 +1,5 @@
 export type LootRefusal =
-	"already-looted" | "own-run" | "nothing-left" | "no-run";
+	"guest" | "already-looted" | "own-run" | "nothing-left" | "no-run";
 
 export type LootTarget = {
 	readonly ownerId: string;
@@ -10,12 +10,14 @@ export type LootTarget = {
 export type LootViewer = {
 	readonly id: string;
 	readonly hasLiveRun: boolean;
+	readonly guest?: boolean;
 };
 
 export const lootRefusalOf = (
 	target: LootTarget,
 	viewer: LootViewer
 ): LootRefusal | null => {
+	if (viewer.guest === true) return "guest";
 	if (target.lootedById !== null) return "already-looted";
 	if (target.ownerId === viewer.id) return "own-run";
 	if (target.lootKb <= 0) return "nothing-left";

@@ -1,11 +1,11 @@
 ---
 # DVTD-4o32
 title: Wiki 2.8 omits the git tag unlock at gate 4
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-08-23T18:08:18Z
-updated_at: 2026-08-23T18:08:18Z
+updated_at: 2026-10-20T08:44:38Z
 ---
 
 Found while checking the Dex Gates mock against the domain (DVTD-gkln).
@@ -14,4 +14,8 @@ The "What unlocks when" table in `docs/wiki.md` 2.8 lists Shop/Rebuild, Lock, Ex
 
 Marciano's own Dex mock has it right, which is how this surfaced.
 
-- [ ] Add git tag to gate 4's "Also unlocks" cell, and note it stops at gate 10
+- [x] Add git tag to gate 4's "Also unlocks" cell, and note it stops at gate 10
+
+## Summary of Changes
+
+Gate 4's unlock cell now reads "git tag, sold through gate 10", generated from PIN_FROM_GATE and PIN_UNTIL_GATE (done in DVTD-goqc).

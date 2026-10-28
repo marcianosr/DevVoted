@@ -37,6 +37,31 @@ describe("loginDemo viewmodel", () => {
 		expect(card.revealed).toBe(true);
 	});
 
+	it("deals the pairs poll second, with its tiles unlinked and no choices", () => {
+		const card = demoCardFor({ poll: 1, phase: "enter" });
+
+		expect(card.answerType).toBe("pairs");
+		expect(card.options).toEqual([]);
+		expect(card.pairs?.left).toHaveLength(card.pairs?.right.length ?? 0);
+		expect(card.pairs?.links).toEqual([]);
+	});
+
+	it("links every pair as matched once the pairs poll is answered", () => {
+		const card = demoCardFor(pickedOf(1));
+		const pairs = card.pairs;
+
+		expect(pairs?.links).toHaveLength(pairs?.left.length ?? 0);
+		expect(pairs?.links?.every((link) => link.verdict === "matched")).toBe(
+			true
+		);
+		expect(pairs?.left.every((tile) => tile.verdict === "matched")).toBe(true);
+	});
+
+	it("keeps the choice polls free of a pairs board", () => {
+		expect(demoCardFor(FIRST_STEP).pairs).toBeUndefined();
+		expect(demoCardFor(FIRST_STEP).answerType).toBe("single");
+	});
+
 	it("grows the coverage by one right answer per poll", () => {
 		const opening = demoCardFor(FIRST_STEP).coverage.held;
 		const afterOne = demoCardFor(pickedOf(0)).coverage.held;

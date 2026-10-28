@@ -110,6 +110,7 @@ export type SessionAnswerRow = {
 	borderUrl: string | null;
 	optionId: number | null;
 	mirrored: boolean;
+	isGuest: boolean;
 };
 
 const SESSION_ANSWER_COLUMNS = {
@@ -119,6 +120,7 @@ const SESSION_ANSWER_COLUMNS = {
 	displayName: usersTable.display_name,
 	photoUrl: usersTable.photo_url,
 	equippedBorderId: usersTable.equipped_border_id,
+	isGuest: usersTable.is_guest,
 	optionId: pollResponseOptionsTable.option_id,
 	mirrored: pollResponsesTable.mirrored,
 	answerDate: pollResponsesTable.answer_date,
@@ -136,8 +138,9 @@ const fetchSessionAnswersWhere = async (
 			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		)
 		.where(and(eq(pollResponsesTable.mode, "session"), filter));
-	return rows.map(({ equippedBorderId, ...row }) => ({
+	return rows.map(({ equippedBorderId, isGuest, ...row }) => ({
 		...row,
+		isGuest: isGuest === true,
 		borderUrl: borderUrlOf(equippedBorderId),
 	}));
 };

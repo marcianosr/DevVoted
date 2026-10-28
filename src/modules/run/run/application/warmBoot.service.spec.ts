@@ -54,7 +54,7 @@ const tx = {} as unknown as RunTx;
 const configuring = (): RunState => createRun(pool(5), handed);
 
 const boot = (pick: Parameters<typeof warmBootRunService>[0]["pick"]) =>
-	warmBootRunService({ userId: MISTY, date: DATE, pick });
+	warmBootRunService({ isGuest: false, userId: MISTY, date: DATE, pick });
 
 const refusalOf = async (
 	pick: Parameters<typeof warmBootRunService>[0]["pick"]

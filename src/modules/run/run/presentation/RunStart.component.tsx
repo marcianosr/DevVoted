@@ -1,3 +1,4 @@
+import { useViewer } from "~/modules/account/auth/application/useViewer.hook";
 import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useDisclosure } from "~/shared/hooks/useDisclosure.hook";
@@ -33,7 +34,8 @@ export const RunStart = () => {
 	const runNumber = useRunNumber();
 	const { start } = useRunActions();
 	const countdown = useNextPollsCountdown("second");
-	const community = useRunCommunity();
+	const viewer = useViewer();
+	const community = useRunCommunity(viewer?.isGuest !== true);
 	const pollsLeftToday = usePollsLeftToday();
 
 	const build = hubBuildFor(view);

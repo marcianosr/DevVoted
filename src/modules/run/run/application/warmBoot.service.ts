@@ -75,6 +75,7 @@ export const warmBootRunService = async (args: {
 	userId: string;
 	date: string;
 	pick: WireWarmBootPick;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> => {
 	const order = await handleApiOperation(() => ordering(args), "warmBootRun");
 	if (!order.success) return order;
@@ -84,5 +85,6 @@ export const warmBootRunService = async (args: {
 		date: args.date,
 		action: { type: "warm-boot", ...order.data },
 		settle: debiting(args.userId, args.date, order.data.archiveBytes),
+		isGuest: args.isGuest,
 	});
 };

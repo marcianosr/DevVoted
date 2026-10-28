@@ -14,19 +14,20 @@ import {
 	createPollWithOptionsSchema,
 	updatePollSchema,
 } from "~/modules/polls/authoring/application/poll.validation";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import {
+	withAuthenticatedUser,
+	withMemberUser,
+} from "~/shared/utils/authorization";
 
 export const createPoll = createServerFn({ method: "POST" })
 	.validator(createPollWithOptionsSchema)
 	.handler(({ data }) =>
-		withAuthenticatedUser((session) => suggestPoll(session, data))
+		withMemberUser((session) => suggestPoll(session, data))
 	);
 
 export const updatePoll = createServerFn({ method: "POST" })
 	.validator(updatePollSchema)
-	.handler(({ data }) =>
-		withAuthenticatedUser((session) => editPoll(session, data))
-	);
+	.handler(({ data }) => withMemberUser((session) => editPoll(session, data)));
 
 export const markPollReviewed = createServerFn({ method: "POST" })
 	.validator(z.object({ id: z.number().int().positive() }))

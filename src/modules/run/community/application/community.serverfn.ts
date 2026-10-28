@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { getTodayDateString } from "~/shared/lib/dateUtils";
-import { withAuthenticatedUser } from "~/shared/utils/authorization";
+import {
+	withAuthenticatedUser,
+	withMemberUser,
+} from "~/shared/utils/authorization";
 
 import {
 	getReviewPollsService,
@@ -18,7 +21,7 @@ import { lootFallenRunService } from "~/modules/run/community/application/loot.s
 
 export const getRunCommunity = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser(({ userId }) =>
+		withMemberUser(({ userId }) =>
 			getRunCommunityService({ userId, date: getTodayDateString() })
 		)
 );
@@ -32,7 +35,7 @@ export const getReviewPolls = createServerFn({ method: "GET" })
 			.strict()
 	)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
+		withMemberUser(({ userId }) =>
 			getReviewPollsService({ userId, pollIds: data.pollIds })
 		)
 	);
@@ -52,17 +55,18 @@ export const getApprovalSlots = createServerFn({ method: "GET" }).handler(
 
 export const submitCrowdPick = createServerFn({ method: "POST" }).handler(
 	async () =>
-		withAuthenticatedUser(({ userId }) =>
-			submitCrowdPickService({ userId, date: getTodayDateString() })
+		withAuthenticatedUser(({ userId, isGuest }) =>
+			submitCrowdPickService({ userId, date: getTodayDateString(), isGuest })
 		)
 );
 
 export const lootFallenRun = createServerFn({ method: "POST" })
 	.validator(z.object({ runId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser(({ userId }) =>
+		withAuthenticatedUser(({ userId, isGuest }) =>
 			lootFallenRunService({
 				userId,
+				isGuest,
 				date: getTodayDateString(),
 				fallenRunId: data.runId,
 			})

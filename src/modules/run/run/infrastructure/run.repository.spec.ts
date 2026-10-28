@@ -99,6 +99,7 @@ describe("applyActionToRun", () => {
 			userId: "red-from-pallet-town",
 			today: TEST_DATES.birthday,
 			action,
+			isGuest: false,
 		});
 	};
 
@@ -166,6 +167,7 @@ describe("applyActionToRun", () => {
 		const result = await applyActionToRun({
 			runId: 64,
 			userId: "red-from-pallet-town",
+			isGuest: false,
 			today: TEST_DATES.birthday,
 			action: {
 				type: "warm-boot",
@@ -198,6 +200,7 @@ describe("applyActionToRun", () => {
 			applyActionToRun({
 				runId: 64,
 				userId: "red-from-pallet-town",
+				isGuest: false,
 				today: TEST_DATES.birthday,
 				action: {
 					type: "warm-boot",
@@ -286,6 +289,7 @@ describe("applyActionToRun", () => {
 		const { state } = await applyActionToRun({
 			runId: 64,
 			userId: "red-from-pallet-town",
+			isGuest: false,
 			today: TEST_DATES.birthday,
 			action: { type: "answer", optionIds: [correctOptionId(1)] },
 			settle,
@@ -363,6 +367,56 @@ describe("applyActionToRun", () => {
 		expect(mock.setCalls[4]).toHaveProperty("archived_storage");
 		expect(mock.setCalls[4]).toHaveProperty("owned_border_ids");
 		expect(db.update).toHaveBeenCalledTimes(5);
+	});
+
+	it("finishes a guest's winning run without storing anything it earned (ADR-178)", async () => {
+		const summitReady = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([{ poll_id: 1 }]);
+		mock.results.push([stateRow(summitReady)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		const {
+			state: next,
+			unlockedConfigIds,
+			earnedTitleIds,
+		} = await applyActionToRun({
+			runId: 64,
+			userId: "missingno-from-cinnabar",
+			today: TEST_DATES.birthday,
+			action: { type: "close-gate" },
+			isGuest: true,
+		});
+
+		expect(next.status).toBe("won");
+		expect(next.swatchGatesEarned?.length ?? 0).toBeGreaterThan(0);
+		expect(mock.updateTables).not.toContain(usersTable);
+		expect(mock.insertTables).not.toContain(userObjectiveProgressTable);
+		expect(mock.insertTables).not.toContain(userTitlesTable);
+		expect(mock.insertTables).not.toContain(userConfigUnlocksTable);
+		expect(unlockedConfigIds).toEqual([]);
+		expect(earnedTitleIds).toEqual([]);
+		expect(mock.setCalls).toContainEqual(
+			expect.objectContaining({
+				status: "finished",
+				completion_reason: "victory",
+			})
+		);
 	});
 
 	it("grants no Champion border to a win a git tag checked out high", async () => {
@@ -959,6 +1013,7 @@ describe("first install stamp (ADR-064)", () => {
 		return applyActionToRun({
 			runId: 64,
 			userId: "red-from-pallet-town",
+			isGuest: false,
 			today: TEST_DATES.birthday,
 			action,
 		});

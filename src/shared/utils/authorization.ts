@@ -10,10 +10,12 @@ import { getSupabaseServerClient } from "~/shared/utils/supabase";
 export type Session = {
 	readonly userId: string;
 	readonly isAdmin: boolean;
+	readonly isGuest: boolean;
 };
 
 export const NOT_AUTHENTICATED = "Not authenticated";
 export const ADMIN_REQUIRED = "Admin access required";
+export const MEMBER_REQUIRED = "Sign in to keep this";
 
 const readSession = async (): Promise<ApiResponse<Session>> => {
 	const supabase = getSupabaseServerClient();
@@ -33,6 +35,7 @@ const readSession = async (): Promise<ApiResponse<Session>> => {
 	return createSuccessResponse({
 		userId: user.id,
 		isAdmin: isAdminEmail(user.email),
+		isGuest: user.is_anonymous === true,
 	});
 };
 
@@ -73,4 +76,13 @@ export const withAdminUser = async <T>(
 		session.isAdmin
 			? operation(session)
 			: createErrorResponse(new Error(ADMIN_REQUIRED))
+	);
+
+export const withMemberUser = async <T>(
+	operation: (session: Session) => Promise<ApiResponse<T>>
+): Promise<ApiResponse<T>> =>
+	withAuthenticatedUser(async (session) =>
+		session.isGuest
+			? createErrorResponse(new Error(MEMBER_REQUIRED))
+			: operation(session)
 	);

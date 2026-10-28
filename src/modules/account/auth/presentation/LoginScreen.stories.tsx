@@ -18,6 +18,7 @@ const meta: Meta<typeof LoginScreen> = {
 		hero: heroFor(),
 		card: demoCardFor(FIRST_STEP),
 		github: { pending: false, onPress: noop },
+		guest: { pending: false, onPress: noop },
 		wikiHref: "/wiki",
 	},
 };
@@ -39,12 +40,24 @@ export const SecondPoll: Story = {
 	args: { card: demoCardFor({ poll: 1, phase: "enter" }) },
 };
 
+export const PairsPoll: Story = {
+	args: { card: demoCardFor({ poll: 1, phase: "enter" }) },
+};
+
+export const PairsMatched: Story = {
+	args: { card: demoCardFor({ poll: 1, phase: "picked" }) },
+};
+
 export const Reduced: Story = {
 	args: { card: demoCardFor(SETTLED_STEP) },
 };
 
 export const Redirecting: Story = {
 	args: { github: { pending: true, onPress: noop } },
+};
+
+export const StartingAsGuest: Story = {
+	args: { guest: { pending: true, onPress: noop } },
 };
 
 export const Phone: Story = {
@@ -63,4 +76,8 @@ export const DevelopmentEmail: Story = {
 
 export const DevelopmentGithub: Story = {
 	args: { devSignIn: { ...DEV_EMAIL, method: "github" } },
+};
+
+export const IdentityTaken: Story = {
+	args: { identityTaken: true },
 };

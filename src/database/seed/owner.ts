@@ -66,6 +66,7 @@ export const seedOwner = async (): Promise<SeedOwner | null> => {
 		email: authUser.email,
 		displayName: meta?.display_name || meta?.full_name,
 		photoUrl: meta?.avatar_url,
+		isGuest: false,
 	});
 
 	await db
@@ -73,5 +74,5 @@ export const seedOwner = async (): Promise<SeedOwner | null> => {
 		.set({ owned_swatch_ids: [...SEED_OWNER_SWATCH_IDS] })
 		.where(eq(usersTable.id, owner.id));
 
-	return { id: owner.id, displayName: owner.displayName ?? owner.email };
+	return { id: owner.id, displayName: owner.displayName ?? owner.email ?? "" };
 };

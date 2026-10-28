@@ -148,6 +148,19 @@ describe("ladderFor", () => {
 		});
 	});
 
+	it("gives a guest's card no link, there being no page behind it", () => {
+		const gates = ladderFor({
+			...climb,
+			climbers: climb.climbers.map((entry) =>
+				entry.id === "blue" ? { ...entry, guest: true } : entry
+			),
+		});
+
+		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
+		expect(blue?.card).toBeDefined();
+		expect(blue?.card).not.toHaveProperty("profileHref");
+	});
+
 	it("states the gate a climber stands at and the coverage they hold", () => {
 		const gates = ladderFor(climb);
 

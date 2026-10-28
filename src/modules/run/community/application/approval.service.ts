@@ -84,9 +84,11 @@ const crowdPick = async (userId: string): Promise<readonly string[]> => {
 export const submitCrowdPickService = async ({
 	userId,
 	date,
+	isGuest,
 }: {
 	userId: string;
 	date: string;
+	isGuest: boolean;
 }): Promise<ApiResponse<RunView>> => {
 	const picked = await handleApiOperation(
 		() => crowdPick(userId),
@@ -98,5 +100,6 @@ export const submitCrowdPickService = async ({
 		userId,
 		date,
 		action: { type: "answer", optionIds: picked.data },
+		isGuest,
 	});
 };

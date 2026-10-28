@@ -1,10 +1,12 @@
 import { useState } from "react";
 
+import type { SignInWithOAuthCredentials } from "@supabase/supabase-js";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { WIKI_PATH } from "~/shared/lib/wikiPath";
+import { useViewer } from "~/modules/account/auth/application/useViewer.hook";
 import { getSupabaseBrowserClient } from "~/shared/utils/supabaseBrowser";
 
 import {
@@ -14,6 +16,7 @@ import {
 } from "~/modules/account/auth/application/loginDemo.viewmodel";
 import {
 	loginFn,
+	playAsGuestFn,
 	signupFn,
 } from "~/modules/account/auth/application/auth.serverfn";
 import type { AuthProps } from "~/modules/account/auth/presentation/Auth.ui";
@@ -29,20 +32,29 @@ const SIGN_UP_INSTEAD = "Sign up instead?";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-export type LoginProps = { theme?: KantoColor };
+export type LoginProps = { theme?: KantoColor; identityTaken?: boolean };
 
 const DEFAULT_THEME: KantoColor = "cerulean";
 
-export const loginLoader = (): Required<LoginProps> => ({
+export const loginLoader = (): { theme: KantoColor } => ({
 	theme: randomLoginTheme(),
 });
 
-export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
+const githubCredentials = (): SignInWithOAuthCredentials => ({
+	provider: "github",
+	options: { redirectTo: `${window.location.origin}/auth/callback` },
+});
+
+export const Login = ({
+	theme = DEFAULT_THEME,
+	identityTaken = false,
+}: LoginProps) => {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const [githubPending, setGithubPending] = useState(false);
 	const [method, setMethod] = useState<SignInMethod>("email");
 	const step = useLoginDemo();
+	const viewer = useViewer();
 
 	const loginMutation = useMutation({
 		mutationFn: loginFn,
@@ -55,20 +67,29 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 		},
 	});
 
+	const guestMutation = useMutation({
+		mutationFn: () => playAsGuestFn(),
+		onSuccess: async (data) => {
+			if (data.error) return;
+			queryClient.clear();
+			await router.invalidate();
+			router.navigate({ to: "/run" });
+		},
+	});
+
 	const signupMutation = useMutation({
 		mutationFn: useServerFn(signupFn),
 	});
 
+	const linksTheGuest = viewer?.isGuest === true && !identityTaken;
+
 	const handleGithubLogin = async () => {
 		setGithubPending(true);
 		try {
-			const supabase = getSupabaseBrowserClient();
-			const { error } = await supabase.auth.signInWithOAuth({
-				provider: "github",
-				options: {
-					redirectTo: `${window.location.origin}/auth/callback`,
-				},
-			});
+			const { auth } = getSupabaseBrowserClient();
+			const { error } = linksTheGuest
+				? await auth.linkIdentity(githubCredentials())
+				: await auth.signInWithOAuth(githubCredentials());
 
 			if (error) {
 				console.error("GitHub OAuth error:", error);
@@ -104,6 +125,15 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 			hero={heroFor()}
 			card={demoCardFor(step)}
 			github={{ pending: githubPending, onPress: handleGithubLogin }}
+			identityTaken={identityTaken}
+			guest={
+				viewer?.isGuest
+					? undefined
+					: {
+							pending: guestMutation.isPending,
+							onPress: () => guestMutation.mutate(),
+						}
+			}
 			wikiHref={WIKI_PATH}
 			devSignIn={
 				isDevelopment

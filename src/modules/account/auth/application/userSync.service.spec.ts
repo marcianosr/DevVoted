@@ -7,6 +7,7 @@ vi.mock("~/modules/account/auth/infrastructure/user.repository", () => ({
 	findUserById: vi.fn(),
 	findUserByEmail: vi.fn(),
 	insertUser: vi.fn(),
+	promoteGuest: vi.fn(),
 	touchLastSeen: vi.fn(),
 }));
 
@@ -19,6 +20,13 @@ const BANJO = {
 	email: "banjo@rareware.com",
 	displayName: "Banjo Bear",
 	photoUrl: "https://example.com/banjo.jpg",
+	isGuest: false,
+};
+
+const GRUNTY_IN_DISGUISE = {
+	id: "grunty-guest-456",
+	email: null,
+	isGuest: true,
 };
 
 describe("ensureUserExists", () => {
@@ -31,6 +39,26 @@ describe("ensureUserExists", () => {
 
 		expect(await ensureUserExists(BANJO)).toEqual(BANJO);
 		expect(repository.insertUser).not.toHaveBeenCalled();
+		expect(repository.promoteGuest).not.toHaveBeenCalled();
+	});
+
+	it("turns a stored guest into an account, same id, once the session carries an identity", async () => {
+		const linked = { ...BANJO, id: GRUNTY_IN_DISGUISE.id };
+		vi.mocked(repository.findUserById).mockResolvedValue(GRUNTY_IN_DISGUISE);
+		vi.mocked(repository.promoteGuest).mockResolvedValue(linked);
+
+		expect(await ensureUserExists(linked)).toEqual(linked);
+		expect(repository.promoteGuest).toHaveBeenCalledWith(linked);
+		expect(repository.insertUser).not.toHaveBeenCalled();
+	});
+
+	it("leaves a stored guest a guest while the session is still anonymous", async () => {
+		vi.mocked(repository.findUserById).mockResolvedValue(GRUNTY_IN_DISGUISE);
+
+		expect(await ensureUserExists(GRUNTY_IN_DISGUISE)).toEqual(
+			GRUNTY_IN_DISGUISE
+		);
+		expect(repository.promoteGuest).not.toHaveBeenCalled();
 	});
 
 	it("creates the account on first sight of the identity", async () => {
@@ -58,6 +86,15 @@ describe("ensureUserExists", () => {
 		vi.mocked(repository.findUserByEmail).mockResolvedValue(undefined);
 
 		await expect(ensureUserExists(BANJO)).rejects.toThrow(outage);
+	});
+
+	it("rethrows a failed guest insert without an email lookup, since a guest has no email", async () => {
+		const outage = new Error("connection terminated");
+		vi.mocked(repository.findUserById).mockResolvedValue(undefined);
+		vi.mocked(repository.insertUser).mockRejectedValue(outage);
+
+		await expect(ensureUserExists(GRUNTY_IN_DISGUISE)).rejects.toThrow(outage);
+		expect(repository.findUserByEmail).not.toHaveBeenCalled();
 	});
 });
 

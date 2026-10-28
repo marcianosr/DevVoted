@@ -10,7 +10,10 @@ import {
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import { KANTO_COLORS, type KantoColor } from "~/ui/kanto-theme/colors";
 import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
-import type { QuestionOption } from "~/modules/run/run/presentation/Question.ui";
+import type {
+	QuestionOption,
+	QuestionPairs,
+} from "~/modules/run/run/presentation/Question.ui";
 
 export type DemoPhase = "enter" | "picked" | "leaving";
 
@@ -19,16 +22,31 @@ export type LoginDemoStep = {
 	readonly phase: DemoPhase;
 };
 
-type DemoPoll = {
+type DemoPollHead = {
 	readonly category: string;
 	readonly categoryColor: KantoColor;
 	readonly question: string;
+};
+
+type ChoiceDemoPoll = DemoPollHead & {
+	readonly kind: "choice";
 	readonly options: readonly { readonly id: string; readonly label: string }[];
 	readonly rightId: string;
 };
 
+type DemoPair = { readonly term: string; readonly meaning: string };
+
+type PairsDemoPoll = DemoPollHead & {
+	readonly kind: "pairs";
+	readonly pairs: readonly DemoPair[];
+	readonly meaningOrder: readonly number[];
+};
+
+type DemoPoll = ChoiceDemoPoll | PairsDemoPoll;
+
 export const DEMO_POLLS: readonly DemoPoll[] = [
 	{
+		kind: "choice",
 		category: "JavaScript",
 		categoryColor: "saffron",
 		question: "Which one is a valid arrow function?",
@@ -40,6 +58,20 @@ export const DEMO_POLLS: readonly DemoPoll[] = [
 		rightId: "b",
 	},
 	{
+		kind: "pairs",
+		category: "General Backend",
+		categoryColor: "lavender",
+		question: "Match each status code to its meaning.",
+		pairs: [
+			{ term: "`200`", meaning: "OK" },
+			{ term: "`301`", meaning: "Moved permanently" },
+			{ term: "`404`", meaning: "Not found" },
+			{ term: "`503`", meaning: "Service unavailable" },
+		],
+		meaningOrder: [2, 0, 3, 1],
+	},
+	{
+		kind: "choice",
 		category: "CSS",
 		categoryColor: "cerulean",
 		question: "Which selector wins on specificity?",
@@ -51,6 +83,7 @@ export const DEMO_POLLS: readonly DemoPoll[] = [
 		rightId: "b",
 	},
 	{
+		kind: "choice",
 		category: "Git",
 		categoryColor: "vermillion",
 		question: "Which command lists the commits you have not pushed yet?",
@@ -91,12 +124,14 @@ export const nextStep = ({ poll, phase }: LoginDemoStep): LoginDemoStep => {
 
 export type LoginDemoCard = {
 	readonly cardKey: string;
+	readonly answerType: "single" | "pairs";
 	readonly category: string;
 	readonly categoryColor: KantoColor;
 	readonly counter: string;
 	readonly question: string;
 	readonly options: readonly QuestionOption[];
 	readonly pickedIds: readonly string[];
+	readonly pairs?: QuestionPairs;
 	readonly coverage: CoverageBarProps;
 	readonly leaving: boolean;
 	readonly revealed: boolean;
@@ -122,13 +157,56 @@ const coverageAt = (step: LoginDemoStep): CoverageBarProps => {
 	};
 };
 
-const optionsOf = (poll: DemoPoll, answered: boolean): QuestionOption[] =>
+const optionsOf = (poll: ChoiceDemoPoll, answered: boolean): QuestionOption[] =>
 	poll.options.map((option, index) => ({
 		id: option.id,
 		letter: LETTERS[index],
 		label: option.label,
 		state: answered && option.id === poll.rightId ? "right" : undefined,
 	}));
+
+const termId = (index: number): string => `term-${index}`;
+const meaningId = (index: number): string => `meaning-${index}`;
+
+const pairsOf = (poll: PairsDemoPoll, answered: boolean): QuestionPairs => {
+	const verdict = answered ? "matched" : undefined;
+	return {
+		left: poll.pairs.map((pair, index) => ({
+			id: termId(index),
+			label: pair.term,
+			verdict,
+		})),
+		right: poll.meaningOrder.map((index) => ({
+			id: meaningId(index),
+			label: poll.pairs[index].meaning,
+			verdict,
+		})),
+		links: answered
+			? poll.pairs.map((_, index) => ({
+					left: termId(index),
+					right: meaningId(index),
+					verdict: "matched",
+				}))
+			: [],
+	};
+};
+
+const answerOf = (
+	poll: DemoPoll,
+	answered: boolean
+): Pick<LoginDemoCard, "answerType" | "options" | "pickedIds" | "pairs"> =>
+	poll.kind === "pairs"
+		? {
+				answerType: "pairs",
+				options: [],
+				pickedIds: [],
+				pairs: pairsOf(poll, answered),
+			}
+		: {
+				answerType: "single",
+				options: optionsOf(poll, answered),
+				pickedIds: answered ? [poll.rightId] : [],
+			};
 
 export const demoCardFor = (step: LoginDemoStep): LoginDemoCard => {
 	const poll = DEMO_POLLS[step.poll];
@@ -140,8 +218,7 @@ export const demoCardFor = (step: LoginDemoStep): LoginDemoCard => {
 		categoryColor: poll.categoryColor,
 		counter: `${step.poll + 1} of ${SLICE_WINDOW}`,
 		question: poll.question,
-		options: optionsOf(poll, answered),
-		pickedIds: answered ? [poll.rightId] : [],
+		...answerOf(poll, answered),
 		coverage: coverageAt(step),
 		leaving: step.phase === "leaving",
 		revealed: answered,

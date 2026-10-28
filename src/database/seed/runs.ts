@@ -140,7 +140,11 @@ export const seedPlayerRuns = async (today: string): Promise<PlayerRuns> => {
 		if (todaysRun === undefined) continue;
 
 		if (todaysRun === "started") {
-			const run = await startRunService({ userId: player.id, date: today });
+			const run = await startRunService({
+				userId: player.id,
+				date: today,
+				isGuest: false,
+			});
 			if (!run.success)
 				throw new Error(`${player.displayName} could not start: ${run.error}`);
 			started.push(player.displayName);

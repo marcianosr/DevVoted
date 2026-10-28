@@ -48,7 +48,7 @@ const ViewerAdvertisement = ({ placement, user }: ViewerAdvertisementProps) => {
 			{...advertisementPropsFor(
 				advertisement,
 				{
-					name: user.displayName || user.email,
+					name: user.displayName || user.email || "",
 					photoUrl: user.photoUrl ?? undefined,
 				},
 				profilePathFor(user.id)

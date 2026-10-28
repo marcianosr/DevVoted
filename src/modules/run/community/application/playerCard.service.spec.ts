@@ -44,6 +44,7 @@ const PROFILE = {
 	ownedSwatchIds: [],
 	equippedSwatchId: null,
 	role: "user",
+	isGuest: false,
 };
 
 const CLIMBER = {
@@ -173,5 +174,29 @@ describe("getPlayerCardService", () => {
 			bestCategory: "css",
 			coveragePercent: expect.any(Number),
 		});
+	});
+});
+
+describe("a guest's card", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		fetchPublicProfile.mockResolvedValue({
+			...PROFILE,
+			displayName: "QuirkyAriados8870",
+			isGuest: true,
+		});
+		fetchPublishedPollCounts.mockResolvedValue({ published: 0 });
+		fetchActiveClimberFor.mockResolvedValue(null);
+		fetchBestCategories.mockResolvedValue(new Map());
+		fetchObjectiveProgressByUser.mockResolvedValue([]);
+	});
+
+	it("carries the generated name and no swatch strip at all", async () => {
+		const response = await getPlayerCardService(MISTY);
+
+		expect(response.success).toBe(true);
+		if (!response.success) return;
+		expect(response.data.displayName).toBe("QuirkyAriados8870");
+		expect(response.data).not.toHaveProperty("swatchGates");
 	});
 });
