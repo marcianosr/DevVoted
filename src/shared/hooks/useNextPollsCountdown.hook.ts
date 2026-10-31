@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import {
 	formatCompactDuration,
-	nextLocalMidnight,
+	nextGameDayStart,
 } from "~/shared/lib/dateUtils";
 
 export type CountdownTick = "minute" | "second";
@@ -21,7 +21,7 @@ const TICK_MS = {
 export const useNextPollsCountdown = (
 	tick: CountdownTick = "minute"
 ): NextPollsCountdown => {
-	const [deadlineMs] = useState(() => nextLocalMidnight(new Date()).getTime());
+	const [deadlineMs] = useState(() => nextGameDayStart(new Date()).getTime());
 	const [remainingMs, setRemainingMs] = useState(() => deadlineMs - Date.now());
 
 	useEffect(() => {

@@ -69,7 +69,9 @@ _Balatro_ (configs as Jokers, the equation reveal), _Banjo-Kazooie_'s Furnace Fu
 A run is a multi-day climb through numbered gates. Each calendar day one shared
 **daily seed** hands every player the same 5 polls: **1 gate = 1 day = 5 polls**.
 Answer them and the run locks until tomorrow, when a fresh 5-poll **segment** is
-appended. A segment never repeats a poll the run has already answered: such a poll is
+appended. The day is one for everyone: it turns at **UTC midnight** (02:00 in the
+Netherlands in summer, 20:00 in New York), so the seed, the audits and the community
+board mean the same day for every player (ADR-196). A segment never repeats a poll the run has already answered: such a poll is
 replaced by the next one in that day's own shuffle of the poll pool, so everyone who
 needs a replacement that day gets the same one, and every day still deals five.
 
@@ -100,7 +102,7 @@ waits on tomorrow's polls.
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
 [community board](#7-community); after a cleared gate it parks on the **prep page**,
 with the shop a click away and the start-gate button wearing the countdown to
-midnight. A new run reaches prep too, between the build it was dealt and its first
+UTC midnight. A new run reaches prep too, between the build it was dealt and its first
 five polls, so no gate is entered without its stakes stated (ADR-078).
 
 You can **abandon** a run and start fresh the same day, once the shop's **kill -9**
@@ -1559,7 +1561,7 @@ polls on the same day.
 ### 7.1 The community board
 
 The board sits at `/run/community`, one press from the shop or the gate result; a run locked mid-gate for
-the day lands here, with "Back to your run" disabled until local midnight. The
+the day lands here, with "Back to your run" disabled until UTC midnight. The
 header is titled **Community** and carries one clock badge: **New polls in …** while
 the day's polls are spent, **polls are open** otherwise. Beside it sit the day's
 figures: **47 players** who answered today and, when any did, **45 guests** among

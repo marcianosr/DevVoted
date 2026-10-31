@@ -8,7 +8,7 @@ import {
 	runsTable,
 	usersTable,
 } from "~/database/schema";
-import { localDayRange } from "~/shared/lib/dateUtils";
+import { gameDayRange } from "~/shared/lib/dateUtils";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { CHAMPION_BORDER_ID } from "~/modules/account/profile/domain/border.model";
 
@@ -79,7 +79,7 @@ export const findTodaysSessionRun = async (
 	userId: string,
 	date: string
 ): Promise<SessionRunRecord | null> => {
-	const today = localDayRange(date);
+	const today = gameDayRange(date);
 	const [run] = await db
 		.select()
 		.from(runsTable)

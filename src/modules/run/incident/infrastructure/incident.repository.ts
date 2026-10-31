@@ -26,7 +26,7 @@ import type {
 	LastClose,
 } from "~/modules/run/run/domain/run.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
-import { localDayRange } from "~/shared/lib/dateUtils";
+import { gameDayRange } from "~/shared/lib/dateUtils";
 
 export type IncidentStatus = (typeof auditIncidentStatus.enumValues)[number];
 
@@ -264,7 +264,7 @@ export const fetchIncidentsForDate = async (
 ): Promise<IncidentFeedRow[]> => {
 	const sender = alias(usersTable, "sender");
 	const target = alias(usersTable, "target");
-	const { start, end } = localDayRange(date);
+	const { start, end } = gameDayRange(date);
 	const rows = await db
 		.select({
 			id: auditIncidentsTable.id,
