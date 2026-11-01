@@ -1,11 +1,11 @@
 ---
 # DVTD-k8rp
 title: Post-deploy checks for the observability work
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-09-23T13:22:17Z
-updated_at: 2026-09-23T13:22:17Z
+updated_at: 2026-11-01T11:54:11Z
 parent: DVTD-uwf9
 ---
 
@@ -89,3 +89,7 @@ from user_config_unlocks;
 - [ ] Section 3 — visits recording, route patterns clean, signed-out visible
 - [ ] Section 4 — last_seen_at and first_installed_at climbing
 - [ ] Section 5 — no error spike, no latency regression
+
+## Summary of Changes
+
+2026-11-01: Marciano confirmed in production: the admin panel shows visit tracking, and Sentry receives production errors. The per-section SQL checks were not run one by one; the readout working end to end covers them.

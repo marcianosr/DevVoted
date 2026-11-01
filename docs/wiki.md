@@ -1554,6 +1554,10 @@ records, and on a player card that draws no swatch strip and links to no profile
 guest never seats a category board or the Hall of Fame, cannot loot, and can be
 looted and audited like anyone.
 
+A guest unseen for 30 days is deleted with its run, every night at 03:00 UTC. Both
+markers must agree: the app row says guest and the Supabase session is still
+anonymous, so a guest who signed up is never removed.
+
 ---
 
 ## 7. Community
