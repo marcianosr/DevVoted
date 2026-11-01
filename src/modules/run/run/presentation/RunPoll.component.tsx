@@ -80,10 +80,11 @@ export const RunPoll = () => {
 	};
 
 	const advanceFromReveal = () => {
-		if (!reveal) return;
+		if (!reveal || busy) return;
 		commit(reveal);
-		if (reveal.data.gateComplete) send({ type: "close-gate" });
-		stage(null);
+		unread.current = null;
+		if (reveal.data.gateComplete) return send({ type: "close-gate" });
+		setReveal(null);
 	};
 
 	const onSelect = (optionId: string) => {

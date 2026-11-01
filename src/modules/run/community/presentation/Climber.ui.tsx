@@ -37,7 +37,6 @@ const YOU = "ring-2 ring-viridian";
 const RIVAL = "ring-2 ring-vermillion";
 
 const PERFECT = "ring-2 ring-offset-1 ring-theme ring-offset-transparent";
-const SHAKY = "climber-flicker";
 
 const TAG =
 	"absolute -top-1 -right-1 z-10 rounded-xs bg-saffron px-1 text-[8px] leading-tight font-bold text-indigo";
@@ -87,7 +86,6 @@ export type ClimberProps = {
 	you?: boolean;
 	rival?: boolean;
 	perfect?: boolean;
-	shaky?: boolean;
 	rescued?: boolean;
 	dimmed?: boolean;
 	size?: ClimberSize;
@@ -189,7 +187,6 @@ const Face = ({
 	you = false,
 	rival = false,
 	perfect = false,
-	shaky = false,
 	rescued = false,
 	dimmed = false,
 	size = "sm",
@@ -198,7 +195,7 @@ const Face = ({
 }: FaceProps) => (
 	<span
 		title={titled ? (tooltip ?? titleOf(name, you)) : undefined}
-		className={clsx(CHIP, SIZE[size], dimmed && DIMMED, shaky && SHAKY)}
+		className={clsx(CHIP, SIZE[size], dimmed && DIMMED)}
 	>
 		<span
 			className={clsx(

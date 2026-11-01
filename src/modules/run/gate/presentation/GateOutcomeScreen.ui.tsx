@@ -3,6 +3,10 @@ import { clsx } from "clsx";
 
 import { Accuracy } from "~/modules/run/run/presentation/Accuracy.ui";
 import type { AccuracyTrackProps } from "~/modules/run/run/presentation/AccuracyTrack.ui";
+import {
+	SignUpOffer,
+	type SignUpOfferProps,
+} from "~/modules/account/auth/presentation/SignUpOffer.ui";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import {
@@ -124,6 +128,7 @@ export type GateOutcomeScreenProps = {
 	answers: GateOutcomeAnswersPanel;
 	audits?: readonly AuditProps[];
 	tail?: GateOutcomeTail;
+	signUp?: SignUpOfferProps;
 	footer: ScreenFooterProps;
 	width?: ScreenWidth;
 };
@@ -293,6 +298,7 @@ export const GateOutcomeScreen = ({
 	answers,
 	audits = [],
 	tail,
+	signUp,
 	footer,
 	width = "default",
 }: GateOutcomeScreenProps) => {
@@ -324,6 +330,8 @@ export const GateOutcomeScreen = ({
 	const body = (
 		<>
 			<Header {...header} />
+
+			{signUp === undefined ? null : <SignUpOffer {...signUp} />}
 
 			{audits.length === 0 ? null : (
 				<div className={AUDITS}>

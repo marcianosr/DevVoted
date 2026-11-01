@@ -1,3 +1,4 @@
+import { useSignUpOffer } from "~/modules/account/auth/application/useSignUpOffer.hook";
 import {
 	type RunOverScreenHandlers,
 	runOverScreenPropsFor,
@@ -16,13 +17,18 @@ export const RunOverView = ({
 	archiveAfterKb,
 	startRefusal,
 	...on
-}: RunOverViewProps) => (
-	<RunOverScreen
-		{...runOverScreenPropsFor({
-			view,
-			archiveAfterKb,
-			startRefusal,
-			on,
-		})}
-	/>
-);
+}: RunOverViewProps) => {
+	const signUpOffer = useSignUpOffer();
+
+	return (
+		<RunOverScreen
+			{...runOverScreenPropsFor({
+				view,
+				archiveAfterKb,
+				startRefusal,
+				on,
+			})}
+			{...signUpOffer}
+		/>
+	);
+};

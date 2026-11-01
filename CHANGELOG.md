@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Keep this run.** Playing as a guest, every gate result and the end of your run offer to create an account, so the run and what it earns stay yours.
+
+### Changed
+- **Climbers no longer flicker.** A player whose last gate closed SHAKY now stands still on the climb map. The rim for PERFECT and the tag for a resumed run stay.
+
+### Fixed
+- **The last poll of a gate stays answered.** Pressing Next on the poll that closes the gate no longer flashes that poll unanswered before the gate result opens.
+- **The community page fits a phone.** The climb map scrolls inside its own box again, and the page no longer slides sideways.
 
 ## 2.7.1 - 2026-10-28
 ### Changed

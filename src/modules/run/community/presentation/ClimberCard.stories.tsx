@@ -78,7 +78,6 @@ const fallen = () => {
 		theme: "gate-cinnabar" as const,
 		rival: false,
 		perfect: false,
-		shaky: true,
 		standing: {
 			...standing,
 			gate: {

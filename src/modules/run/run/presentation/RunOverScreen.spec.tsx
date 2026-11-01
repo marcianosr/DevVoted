@@ -13,6 +13,7 @@ import {
 
 import { headingOf } from "~/ui/kanto-theme/Panel.ui";
 import { RunOverScreen } from "./RunOverScreen.ui";
+import { COPY as SIGN_UP_OFFER } from "~/modules/account/auth/presentation/SignUpOffer.ui";
 
 const DEAD = kantoRunOver();
 
@@ -217,5 +218,16 @@ describe("RunOverScreen", () => {
 			screen.getByRole("heading", { name: SUMMIT_TITLE })
 		).toBeInTheDocument();
 		expect(screen.getByText(/every gate held/)).toBeInTheDocument();
+	});
+
+	it("offers a guest to keep the run with an account", async () => {
+		const onSignUp = vi.fn();
+		render(<RunOverScreen {...DEAD} signUp={{ onSignUp }} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: SIGN_UP_OFFER.press })
+		);
+
+		expect(onSignUp).toHaveBeenCalledOnce();
 	});
 });

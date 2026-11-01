@@ -26,6 +26,7 @@ import {
 } from "~/test/kantoGate.factory";
 
 import { navRunOf, renderWithNavRun } from "~/test/navRun.harness";
+import { COPY as SIGN_UP_OFFER } from "~/modules/account/auth/presentation/SignUpOffer.ui";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
@@ -581,5 +582,28 @@ describe("GateOutcomeScreen's payout history", () => {
 		);
 
 		expect(screen.queryByText("Score")).toBeNull();
+	});
+
+	describe("for a guest", () => {
+		it("offers to keep the run with an account", async () => {
+			const onSignUp = vi.fn();
+			renderWithNavRun(
+				<GateOutcomeScreen {...kantoGateHealthy()} signUp={{ onSignUp }} />
+			);
+
+			await userEvent.click(
+				screen.getByRole("button", { name: SIGN_UP_OFFER.press })
+			);
+
+			expect(onSignUp).toHaveBeenCalledOnce();
+		});
+
+		it("offers nothing to an account holder", () => {
+			renderWithNavRun(<GateOutcomeScreen {...kantoGateHealthy()} />);
+
+			expect(
+				screen.queryByRole("heading", { name: SIGN_UP_OFFER.lead })
+			).toBeNull();
+		});
 	});
 });

@@ -28,28 +28,3 @@
 		}
 	}
 }
-@keyframes climber-flicker {
-	0%,
-	100% {
-		opacity: 1;
-	}
-	45% {
-		opacity: 0.45;
-	}
-	55% {
-		opacity: 0.6;
-	}
-}
-
-.climber-flicker {
-	animation: climber-flicker 1800ms ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.climber-flicker {
-		animation: none;
-	}
-	.climber-flicker > span:first-child {
-		border-style: dashed;
-	}
-}

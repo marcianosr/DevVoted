@@ -82,12 +82,6 @@ describe("Climber", () => {
 		expect(container.querySelector("span > span")).toHaveClass("ring-theme");
 	});
 
-	it("flickers a chip whose last gate closed shaky", () => {
-		const { container } = render(<Climber name="Misty" shaky />);
-
-		expect(container.firstChild).toHaveClass("climber-flicker");
-	});
-
 	it("tags a run a git tag rescued", () => {
 		render(<Climber name="Misty" rescued />);
 
@@ -96,10 +90,8 @@ describe("Climber", () => {
 
 	it("leaves an unmarked chip bare", () => {
 		const { container } = render(<Climber name="Misty" />);
-		const chip = container.firstChild;
 
-		expect(chip).not.toHaveClass("climber-flicker");
-		expect(chip).toHaveTextContent("MI");
+		expect(container.firstChild).toHaveTextContent("MI");
 		expect(container.querySelector("span > span")).not.toHaveClass(
 			"ring-theme"
 		);
