@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The last poll of a gate stays answered.** Pressing Next on the poll that closes the gate no longer flashes that poll unanswered before the gate result opens.
 - **The community page fits a phone.** The climb map scrolls inside its own box again, and the page no longer slides sideways.
 
+## 2.8.1 - 2026-10-31
+### Fixed
+- **New polls arrive when the clock says they do.** The countdown to new polls ran to your own midnight, while the day only turned at midnight UTC, so outside the UK the clock could hit zero hours before the polls came. The day now turns at midnight UTC for everyone, and the countdown runs to that moment: 02:00 in the Netherlands in summer (01:00 in winter), 20:00 in New York.
+
+## 2.8.0 - 2026-10-28
+### Added
+- **See who matched each pair.** The review puts the faces of who matched a pair on its right tile, as they already did beside a choice.
+- **Prep states what a pairs poll pays.** Scoring gains a **Matching pairs up to** row with its steps: 0, 0.67, 1.33 and 2 on four pairs.
+
+### Changed
+- **The pairs mark moves to the corner on a phone.** The ✓ or ✗ sits on the tile's corner, so the tile's text keeps the room.
+- **Score breakdown starts folded.** The gate outcome and the run's end fold what each poll paid under **Score breakdown**; open it to read the gates.
+- **Ledger notes badge their figures.** "11.2% past the full bar" and "×1.5 on a PERFECT close" read their numbers and band as badges.
+
 ## 2.7.1 - 2026-10-28
 ### Changed
 - **A crowded gate opens.** The `+N` under a gate on the climb map is now a press. It unfolds the column to every player standing there, and folds it again.

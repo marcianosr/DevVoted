@@ -89,6 +89,24 @@ describe("the steps under each gain", () => {
 	});
 });
 
+describe("the pairs gain", () => {
+	const [, , pairs] = gainsFor(LAVENDER);
+
+	it("names matching pairs as paying up to the most", () => {
+		expect(pairs.label).toBe("Matching pairs up to");
+	});
+
+	it("prices four pairs by thirds of two units, the last link forced", () => {
+		expect((pairs.steps ?? []).map((step) => step.figure)).toEqual([
+			"0",
+			"0.67",
+			"1.33",
+			"2",
+		]);
+		expect((pairs.steps ?? []).at(-1)?.tone).toBe("full");
+	});
+});
+
 describe("accuracyFor", () => {
 	it("quotes the multiplier a flawless window reaches at the close", () => {
 		expect(accuracyFor(0)).toEqual({
@@ -105,10 +123,10 @@ describe("accuracyFor", () => {
 });
 
 describe("scoringFor", () => {
-	it("carries the two gains and the accuracy bonus", () => {
+	it("carries the three gains and the accuracy bonus", () => {
 		const scoring = scoringFor(LAVENDER, 0);
 
-		expect(scoring.gains).toHaveLength(2);
+		expect(scoring.gains).toHaveLength(3);
 		expect(scoring.accuracy.figure).toBe("up to ×1.08");
 	});
 });

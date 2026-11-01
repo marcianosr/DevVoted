@@ -7,6 +7,7 @@ import { kbLabel } from "~/shared/lib/storage";
 import type {
 	ClimbFallen,
 	ClimbTodayView,
+	PairSides,
 	RunCommunityPoll,
 	RunCommunityPollDetail,
 	RunCommunityView,
@@ -75,6 +76,7 @@ const climberOf = (voter: CommunityVoter): ClimberProps => ({
 
 export type OptionVotes = {
 	label: string;
+	pair?: PairSides;
 	count: number;
 	climbers: readonly ClimberProps[];
 };
@@ -91,6 +93,7 @@ export const pollVotesOf = (
 							String(poll.pollId),
 							poll.detail.options.map((option) => ({
 								label: option.label,
+								...(option.pair === undefined ? {} : { pair: option.pair }),
 								count: option.count,
 								climbers: option.voters.map(climberOf),
 							})),

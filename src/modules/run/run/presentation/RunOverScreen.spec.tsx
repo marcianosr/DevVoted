@@ -231,3 +231,13 @@ describe("RunOverScreen", () => {
 		expect(onSignUp).toHaveBeenCalledOnce();
 	});
 });
+
+describe("RunOverScreen's gate by gate panel", () => {
+	it("folds the score breakdown shut under the panel's total", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		expect(
+			screen.getByText("Score breakdown").closest("details")
+		).not.toHaveAttribute("open");
+	});
+});

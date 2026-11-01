@@ -69,7 +69,9 @@ _Balatro_ (configs as Jokers, the equation reveal), _Banjo-Kazooie_'s Furnace Fu
 A run is a multi-day climb through numbered gates. Each calendar day one shared
 **daily seed** hands every player the same 5 polls: **1 gate = 1 day = 5 polls**.
 Answer them and the run locks until tomorrow, when a fresh 5-poll **segment** is
-appended. A segment never repeats a poll the run has already answered: such a poll is
+appended. The day is one for everyone: it turns at **UTC midnight** (02:00 in the
+Netherlands in summer, 20:00 in New York), so the seed, the audits and the community
+board mean the same day for every player (ADR-196). A segment never repeats a poll the run has already answered: such a poll is
 replaced by the next one in that day's own shuffle of the poll pool, so everyone who
 needs a replacement that day gets the same one, and every day still deals five.
 
@@ -100,7 +102,7 @@ waits on tomorrow's polls.
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
 [community board](#7-community); after a cleared gate it parks on the **prep page**,
 with the shop a click away and the start-gate button wearing the countdown to
-midnight. A new run reaches prep too, between the build it was dealt and its first
+UTC midnight. A new run reaches prep too, between the build it was dealt and its first
 five polls, so no gate is entered without its stakes stated (ADR-078).
 
 You can **abandon** a run and start fresh the same day, once the shop's **kill -9**
@@ -287,7 +289,7 @@ colour, and the right tile takes the left tile's number. Tap a linked tile to re
 its link, or **clear** to start over. **Check pairs**, beside **clear**, opens once every pair is linked and
 marks every link at once: green where it joins a real pair, red where it does not
 (ADR-197). Three right links force the fourth, so a Check ends with 4, 2, 1 or 0 right.
-After Check and on the review, your board is dealt again as you played it, each link marked ✓ or ✗.
+After Check and on the review, your board is dealt again as you played it, each link marked ✓ or ✗; on a phone the mark sits on the tile's corner so the text keeps the width.
 207, 451 and the Mirror leave a pairs poll alone, the linter and peek
 have nothing to act on (both presses say so and charge nothing), and LGTM cannot approve one.
 
@@ -1562,7 +1564,7 @@ polls on the same day.
 ### 7.1 The community board
 
 The board sits at `/run/community`, one press from the shop or the gate result; a run locked mid-gate for
-the day lands here, with "Back to your run" disabled until local midnight. The
+the day lands here, with "Back to your run" disabled until UTC midnight. The
 header is titled **Community** and carries one clock badge: **New polls in …** while
 the day's polls are spent, **polls are open** otherwise. Beside it sit the day's
 figures: **47 players** who answered today and, when any did, **45 guests** among
@@ -1822,9 +1824,10 @@ The game leans hard into its CI metaphor.
   none), `the run ends` for DANGER —
   with PERFECT last at 100 and the row the run stands in ringed. The footnote
   says the pay is received at the end of the gate and what a peel is settled in. On the
-  right, **Scoring** is three rows (DVTD-a99y): **Single choice** with what a right single
+  right, **Scoring** is four rows (DVTD-a99y, DVTD-fh4b): **Single choice** with what a right single
   adds (+20% at Pallet) and its credit steps under it (0, 1), **Multiple choice up to**
-  with the best multiple (+40%) and its steps (0 to 2 by share), and **Accuracy Bonus**
+  with the best multiple (+40%) and its steps (0 to 2 by share), **Matching pairs up to**
+  with the same best and the steps of a four-pair poll (0, 0.67, 1.33, 2), and **Accuracy Bonus**
   with the multiplier a flawless window reaches from the bonus the run carries (up to
   ×1.08 on a fresh run). Tapping a row's steps swaps them for what each earns with
   your build (the configs that lift every poll alike, read after the gate's opener),
@@ -1937,9 +1940,9 @@ The game leans hard into its CI metaphor.
   "holds", "perfect"); the swatch is a separate prize (ADR-170 swatch), so it
   arrives as a row in the Earned panel, stating the coverage held against
   the 100% it needs. The Coverage panel stands in three sections, the bar, then
-  Accuracy, then Score; the bar's pin reads how far the close reached, past 100% on
+  Accuracy, then **Score breakdown**, folded shut until opened; the bar's pin reads how far the close reached, past 100% on
   a surplus ("112% · PERFECT"), while the fill stops at the full bar, and the Surplus
-  row says by how much ("12% past the full bar"). The nav's track fills the gates the run closed full, never the gates it
+  row says by how much ("12% past the full bar"); a ledger note badges its figures. The nav's track fills the gates the run closed full, never the gates it
   merely walked past, and draws the gate in hand open. Under it sit the panels:
   coverage, **Earned**, by category, payout, build changes and the five answers
   (ADR-154). Earned lists the configs unlocked and titles earned on this gate, then the
@@ -1969,7 +1972,8 @@ The game leans hard into its CI metaphor.
   option on its keycap, round for single-answer polls and square for multi-answer, the
   right answer lit green and your wrong pick red. The faces of who picked an option and
   the vote count sit under its label, counted on the day the poll was dealt, so a gate
-  closed on an earlier day still shows them. An option that carries its own reason
+  closed on an earlier day still shows them. On a pairs poll the faces sit on each pair's right
+  tile. An option that carries its own reason
   shows it in its own section under the option, **Why it’s right** or **Why it’s
   wrong** by the option's correctness, never by the pick (ADR-195). Multi-answer polls
   close with a tally of catches; the snippet sits above the options and the poll's own
@@ -2000,7 +2004,7 @@ letters, then Enter`, or `tap a tile, then its match` on a pairs poll.
   gate it stopped on, the swatches it earned, how many gates of thirteen it held) sit
   **coverage** (the closed bar, the units held against the run's window, and how far
   short of its line it landed), **gate by gate** (one row per gate with what each of its
-  five polls paid, the best gate flagged, totalling to the run's score), **by category**
+  five polls paid, folded shut under **Score breakdown**, the best gate flagged, totalling to the run's score), **by category**
   (right answers per category across the whole run, best and leak flagged), **the build
   at the end** (the configs held, the rung's bill, and what upkeep cost across the
   climb), **storage** (what banks, what burns), and **unlocked** (swatches kept, configs

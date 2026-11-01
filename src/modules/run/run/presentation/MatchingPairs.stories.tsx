@@ -92,3 +92,23 @@ export const Answered: Story = {
 export const AnswerKey: Story = {
 	args: answeredOf(["matched", "matched", "matched", "matched"]),
 };
+
+const VOTERS = [
+	{
+		climbers: [{ name: "Brock" }, { name: "Misty" }, { name: "Erika" }],
+		count: 5,
+	},
+	{ climbers: [{ name: "Misty" }], count: 1 },
+	{ climbers: [], count: 0 },
+	{ climbers: [{ name: "Sabrina" }, { name: "Koga" }], count: 2 },
+];
+
+export const AnsweredWithVoters: Story = {
+	args: {
+		...Answered.args,
+		right: PARTNERS.map((label, row) => ({
+			...tileOf(label),
+			voters: VOTERS[row],
+		})),
+	},
+};

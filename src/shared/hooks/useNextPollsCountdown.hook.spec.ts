@@ -6,14 +6,14 @@ import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook
 describe("useNextPollsCountdown", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
-		vi.setSystemTime(new Date(2026, 7, 4, 16, 30, 0));
+		vi.setSystemTime(new Date("2026-08-04T16:30:00Z"));
 	});
 
 	afterEach(() => {
 		vi.useRealTimers();
 	});
 
-	it("opens with the time left until the local day rolls over", () => {
+	it("opens with the time left until the UTC day rolls over", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		expect(result.current.isOpen).toBe(false);
 		expect(result.current.remaining).toBe("7h 30m");
@@ -55,7 +55,7 @@ describe("useNextPollsCountdown", () => {
 		expect(result.current.remaining).not.toContain("New polls");
 	});
 
-	it("flips open once midnight passes", () => {
+	it("flips open once UTC midnight passes", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		act(() => {
 			vi.advanceTimersByTime(7 * 3_600_000 + 30 * 60_000);
@@ -63,7 +63,7 @@ describe("useNextPollsCountdown", () => {
 		expect(result.current.isOpen).toBe(true);
 	});
 
-	it("stays open while the player lingers past midnight", () => {
+	it("stays open while the player lingers past UTC midnight", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		act(() => {
 			vi.advanceTimersByTime(9 * 3_600_000);

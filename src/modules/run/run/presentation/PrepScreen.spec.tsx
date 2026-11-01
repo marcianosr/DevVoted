@@ -360,7 +360,8 @@ describe("PrepScreen", () => {
 			expect(scoring.getByText("Single choice")).toBeInTheDocument();
 			expect(scoring.getAllByText("+14.3%").length).toBeGreaterThan(0);
 			expect(scoring.getByText("Multiple choice up to")).toBeInTheDocument();
-			expect(scoring.getByText("+28.6%")).toBeInTheDocument();
+			expect(scoring.getByText("Matching pairs up to")).toBeInTheDocument();
+			expect(scoring.getAllByText("+28.6%")).toHaveLength(2);
 			expect(scoring.getByText("Accuracy Bonus")).toBeInTheDocument();
 			expect(scoring.getByText("up to ×1.08")).toBeInTheDocument();
 			expect(scoring.queryByText("Pallet")).toBeNull();

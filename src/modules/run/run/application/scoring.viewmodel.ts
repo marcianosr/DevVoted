@@ -1,4 +1,5 @@
-import { CHOICE_LABEL } from "~/shared/lib/copy";
+import { ANSWER_TYPE_LABEL, CHOICE_LABEL } from "~/shared/lib/copy";
+import { MIN_PAIRS } from "~/shared/lib/answerTypes";
 import {
 	answerPayoutFor,
 	previewContextFor,
@@ -31,6 +32,7 @@ const POINTS = "%";
 
 const SINGLE_STEP = 1;
 const MULTIPLE_STEP = 0.25;
+const PAIRS_STEP = 1 / (MIN_PAIRS - 1);
 
 const capitalised = (label: string) =>
 	`${label.charAt(0).toUpperCase()}${label.slice(1)}`;
@@ -96,6 +98,12 @@ export const gainsFor = (
 		label: `${capitalised(CHOICE_LABEL.multiple)} ${UP_TO}`,
 		steps: stepsOf(MULTIPLE_CREDIT, MULTIPLE_STEP, gate, (share) =>
 			builtUnitsOf(configs, "multiple", share)
+		),
+	},
+	{
+		label: `${capitalised(ANSWER_TYPE_LABEL.pairs)} ${UP_TO}`,
+		steps: stepsOf(MULTIPLE_CREDIT, PAIRS_STEP, gate, (share) =>
+			builtUnitsOf(configs, "pairs", share)
 		),
 	},
 ];
