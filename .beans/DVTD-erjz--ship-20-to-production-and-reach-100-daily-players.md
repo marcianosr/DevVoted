@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: critical
 created_at: 2026-09-30T18:50:26Z
-updated_at: 2026-10-08T13:19:05Z
+updated_at: 2026-10-28T13:12:00Z
 parent: DVTD-u35m
 ---
 
@@ -66,3 +66,11 @@ P0 #2 done in DVTD-zvyz (2026-10-08): a fresh database rebuilds from migrations 
 ### Status 2026-10-08, afternoon
 
 2.0 has been live since 2026-10-05 and is at v2.3.0. Decided today with Marciano: no automated reminders and no reactivation mail, so the reminder half of item 13 is dropped and growth is organic; no warm intros, Codam or HvA. The channels, posting rules and per-push log live in docs/growth.md, tracked by the weekly posting bean DVTD-3ahx. The login screen gets a pitch and the two shared-link leaks are fixed on feat/login-pitch. The tip jar (DVTD-ckbl) is unfrozen for after the front door. The share loop (DVTD-ixjg) stays agreed and later.
+
+### Status 2026-10-28
+
+v2.7.1 is live. The front door is open: guest play (v2.7.0), the pitch and demo poll on `/`, the OG image, and a D1/D7 readout in the admin panel. Ready for one-subreddit pushes, not yet for the spike.
+
+Before the first push: sign-in offered at the first gate close and the debrief (DVTD-l4kh), the climb map scrolling sideways on a phone (DVTD-jdb0), the spent-day hydration error (DVTD-25es), and the first-run UX playtest.
+
+Before the spike (Show HN, r/InternetIsBeautiful, Product Hunt): stale guest cleanup (DVTD-6dsq), a rate limit or captcha on anonymous sign-in and writes (P2 #15), the post-deploy checks (DVTD-k8rp), and the community board count for runs that end on a later day (DVTD-dw3p).

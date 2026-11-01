@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { useSignUpOffer } from "~/modules/account/auth/application/useSignUpOffer.hook";
 import {
 	type GateOutcomeScreenHandlers,
 	gateOutcomeScreenPropsFor,
@@ -47,6 +48,7 @@ export const GateOutcomeView = ({
 	const [chosen, setChosen] = useState<readonly string[]>([]);
 	const [fromStorage, setFromStorage] = useState(false);
 	const countdown = useNextPollsCountdown();
+	const signUpOffer = useSignUpOffer();
 
 	if (view.lastClose === null) return null;
 
@@ -76,6 +78,7 @@ export const GateOutcomeView = ({
 						},
 					},
 				})}
+				{...signUpOffer}
 			/>
 			<GateReveal view={view} close={view.lastClose} runNumber={runNumber} />
 		</>

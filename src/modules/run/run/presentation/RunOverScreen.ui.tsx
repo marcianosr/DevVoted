@@ -16,6 +16,10 @@ import {
 	type HeaderProps,
 } from "~/modules/run/gate/presentation/Header.ui";
 import { Meter } from "~/ui/kanto-theme/Meter.ui";
+import {
+	SignUpOffer,
+	type SignUpOfferProps,
+} from "~/modules/account/auth/presentation/SignUpOffer.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Screen, type ScreenWidth } from "~/ui/kanto-theme/Screen.ui";
@@ -121,6 +125,7 @@ export type RunOverScreenProps = {
 	build: RunOverBuild;
 	storage: RunOverStorage;
 	unlocked: RunOverUnlocked;
+	signUp?: SignUpOfferProps;
 	footer: ScreenFooterProps;
 	won?: boolean;
 	width?: ScreenWidth;
@@ -295,6 +300,7 @@ export const RunOverScreen = ({
 	build,
 	storage,
 	unlocked,
+	signUp,
 	footer,
 	won = false,
 	width = "default",
@@ -302,6 +308,8 @@ export const RunOverScreen = ({
 	const body = (
 		<>
 			<Header {...header} noteFigures />
+
+			{signUp === undefined ? null : <SignUpOffer {...signUp} />}
 
 			<CoveragePanel bar={bar} {...coverage} />
 

@@ -31,7 +31,8 @@ const STAR = "★";
 const READER_ONLY = "sr-only";
 const STACK_MAX = 4;
 
-const SCROLLER = "no-scrollbar flex w-full gap-1.5 overflow-x-auto pb-2";
+const SCROLLER =
+	"no-scrollbar relative flex w-full gap-1.5 overflow-x-auto pb-2";
 const COLUMN = "flex w-24 shrink-0 flex-col items-center gap-2";
 
 const BLOCK = "relative flex w-full items-center justify-center";
@@ -110,7 +111,6 @@ const Chip = ({
 			you={climber.you}
 			rival={climber.rival}
 			perfect={climber.mark === "perfect"}
-			shaky={climber.mark === "shaky"}
 			rescued={climber.rescued}
 			dimmed={dimmed}
 			size="md"

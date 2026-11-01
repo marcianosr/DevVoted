@@ -115,10 +115,9 @@ describe("ClimberCard", () => {
 
 	it("wears the climber's own marks, so the card and the chip agree", () => {
 		const { container } = render(
-			<ClimberCard {...card({ rival: true, shaky: true, rescued: true })} />
+			<ClimberCard {...card({ rival: true, rescued: true })} />
 		);
 
-		expect(container.querySelector(".climber-flicker")).toBeInTheDocument();
 		expect(container.querySelector(".ring-vermillion")).toBeInTheDocument();
 		expect(screen.getByTitle("Yusuf")).toHaveTextContent("tag");
 	});

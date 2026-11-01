@@ -119,7 +119,6 @@ const cardFor = (
 	you: climber.you,
 	rival: climber.rival,
 	perfect: climber.mark === "perfect",
-	shaky: climber.mark === "shaky",
 	rescued: climber.rescued,
 	theme: "gate-pallet",
 	standing: standingAt(CLEARED_GATE, 40),

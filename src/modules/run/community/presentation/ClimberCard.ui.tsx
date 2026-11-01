@@ -72,7 +72,6 @@ export type ClimberCardProps = {
 	you?: boolean;
 	rival?: boolean;
 	perfect?: boolean;
-	shaky?: boolean;
 	rescued?: boolean;
 	standing?: ClimberCardStanding;
 	loot?: ClimberCardLoot;
@@ -120,7 +119,6 @@ type FaceProps = Pick<
 	| "you"
 	| "rival"
 	| "perfect"
-	| "shaky"
 	| "rescued"
 >;
 
@@ -164,7 +162,6 @@ export const ClimberCard = ({
 	you = false,
 	rival = false,
 	perfect = false,
-	shaky = false,
 	rescued = false,
 	standing,
 	loot,
@@ -183,7 +180,6 @@ export const ClimberCard = ({
 						you={you}
 						rival={rival}
 						perfect={perfect}
-						shaky={shaky}
 						rescued={rescued}
 					/>
 				}

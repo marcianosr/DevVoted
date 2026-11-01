@@ -1538,6 +1538,9 @@ refuses a guest both, and the page draws a sample board, blurred and dimmed, und
 card headed **Sign up to see what other players did!** that lists what an
 account buys and ends in a sign-in press.
 
+Every gate result and the run's end show a guest a **Keep this run** panel under the
+title, with a **Create an account** press to the login page. It offers, never blocks.
+
 Signing up keeps the run. A guest's GitHub press links the GitHub identity onto the
 same account, so the run, its state and its answers stay where they are; the
 generated name gives way to the GitHub name. A GitHub account that already plays

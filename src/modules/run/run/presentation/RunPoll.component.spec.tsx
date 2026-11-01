@@ -162,6 +162,29 @@ describe("RunPoll", () => {
 		).toBeInTheDocument();
 	});
 
+	it("keeps the last answer of the gate on screen while the gate closes", async () => {
+		const user = userEvent.setup();
+		const { view, poll } = renderApprovedPoll();
+		vi.mocked(submitCrowdPick).mockResolvedValue({
+			success: true,
+			data: {
+				...view,
+				gateComplete: true,
+				answeredThisGate: [roomAnswered(poll)],
+			},
+		});
+		vi.mocked(dispatchRunAction).mockReturnValue(new Promise(() => {}));
+
+		await user.click(await screen.findByRole("button", { name: /^LGTM/ }));
+		await user.click(await screen.findByRole("button", { name: "Next" }));
+
+		await waitFor(() =>
+			expect(vi.mocked(dispatchRunAction)).toHaveBeenCalledOnce()
+		);
+		expect(screen.getByText("The room got this one.")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /^LGTM/ })).toBeNull();
+	});
+
 	it("writes an unread reveal into today's run when the poll is left before Next", async () => {
 		const user = userEvent.setup();
 		const { view, poll, queryClient, unmount } = renderApprovedPoll();

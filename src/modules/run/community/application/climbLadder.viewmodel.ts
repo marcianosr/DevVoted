@@ -239,7 +239,6 @@ const cardOf = (
 		you: chip.you,
 		rival: chip.rival,
 		perfect: chip.mark === "perfect",
-		shaky: chip.mark === "shaky",
 		rescued: chip.rescued,
 		...(loot === undefined ? {} : { loot }),
 		...(file === undefined ? {} : { file }),
