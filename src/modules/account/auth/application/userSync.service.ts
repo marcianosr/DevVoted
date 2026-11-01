@@ -18,12 +18,16 @@ const rememberVisit = async (userId: string): Promise<void> => {
 	}
 };
 
+const withoutBlankEmail = (user: User): User => ({
+	...user,
+	email: user.email || null,
+});
+
 const hasJustLinkedAnIdentity = (stored: AccountUser, session: User): boolean =>
 	stored.isGuest && !session.isGuest;
 
-export const ensureUserExists = async (
-	userData: User
-): Promise<AccountUser> => {
+export const ensureUserExists = async (session: User): Promise<AccountUser> => {
+	const userData = withoutBlankEmail(session);
 	const existing = await findUserById(userData.id);
 	if (existing) {
 		await rememberVisit(existing.id);

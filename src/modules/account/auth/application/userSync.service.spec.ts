@@ -52,6 +52,15 @@ describe("ensureUserExists", () => {
 		expect(repository.insertUser).not.toHaveBeenCalled();
 	});
 
+	it("stores a guest whose session carries an empty email with no email, so guests never collide on it", async () => {
+		vi.mocked(repository.findUserById).mockResolvedValue(undefined);
+		vi.mocked(repository.insertUser).mockResolvedValue(GRUNTY_IN_DISGUISE);
+
+		await ensureUserExists({ ...GRUNTY_IN_DISGUISE, email: "" });
+
+		expect(repository.insertUser).toHaveBeenCalledWith(GRUNTY_IN_DISGUISE);
+	});
+
 	it("leaves a stored guest a guest while the session is still anonymous", async () => {
 		vi.mocked(repository.findUserById).mockResolvedValue(GRUNTY_IN_DISGUISE);
 

@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **Play today works again without an account.** Pressing it sent you back to the start for everyone after the first guest. You now land in your run.
 
 ## 2.9.1 - 2026-11-01
 ### Changed
